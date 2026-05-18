@@ -80,6 +80,10 @@ tbody td { padding: 7px 6px; vertical-align: top; }
 .badge-hired { background: #abebc6; color: #196f3d; }
 .badge-reply { background: #fadbd8; color: #c0392b; }
 .area-tag { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; background: #eee; margin: 1px; }
+.area-checkboxes { display: flex; flex-wrap: wrap; gap: 6px; }
+.area-check { display: inline-flex; align-items: center; gap: 3px; padding: 4px 10px; border: 1px solid #ddd; border-radius: 16px; font-size: 12px; cursor: pointer; user-select: none; transition: all 0.15s; }
+.area-check:has(input:checked) { background: #d6eaf8; border-color: #2471a3; color: #2471a3; font-weight: 600; }
+.area-check input { display: none; }
 
 /* ===== Detail Panel (モバイル対応) ===== */
 .detail-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 100; }
@@ -246,16 +250,14 @@ tbody td { padding: 7px 6px; vertical-align: top; }
     </select>
   </div>
   <div class="detail-field">
-    <label>エリア</label>
-    <select id="dArea" onchange="markDetailDirty()">
-      <option value="">未振分</option>
-      <option value="城北">城北</option>
-      <option value="東葛">東葛</option>
-      <option value="越谷">越谷</option>
-      <option value="清瀬">清瀬</option>
-      <option value="足立">足立</option>
-      <option value="全エリア">全エリア</option>
-    </select>
+    <label>エリア（複数選択可）</label>
+    <div class="area-checkboxes" id="dAreaChecks">
+      <label class="area-check"><input type="checkbox" value="城北" onchange="markDetailDirty()"> 城北</label>
+      <label class="area-check"><input type="checkbox" value="東葛" onchange="markDetailDirty()"> 東葛</label>
+      <label class="area-check"><input type="checkbox" value="越谷" onchange="markDetailDirty()"> 越谷</label>
+      <label class="area-check"><input type="checkbox" value="清瀬" onchange="markDetailDirty()"> 清瀬</label>
+      <label class="area-check"><input type="checkbox" value="足立" onchange="markDetailDirty()"> 足立</label>
+    </div>
   </div>
   <div class="detail-field">
     <label>対応者</label>
@@ -417,10 +419,11 @@ function applyFilters() {
       if (getStatusGroup(c.status) !== currentFilter) return false;
     }
     // Area filter
-    if (areaF && !(c.area || '').includes(areaF)) return false;
+    const cAreaArr = Array.isArray(c.area) ? c.area : (c.area || '').split(',').filter(Boolean).map(a => a.trim());
+    if (areaF && !cAreaArr.includes(areaF)) return false;
     // Text search
     if (search) {
-      const hay = [c.jsId, c.name, c.location, c.agent, c.agentEmail, c.area, c.handler, c.notes].filter(Boolean).join(' ').toLowerCase();
+      const hay = [c.jsId, c.name, c.location, c.agent, c.agentEmail, cAreaArr.join(' '), c.handler, c.notes].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
     }
     return true;
@@ -455,7 +458,8 @@ function renderTable(list) {
   }
   tbody.innerHTML = list.map(c => {
     const statusBadge = getStatusBadge(c.status);
-    const areaTags = (c.area || '').split(',').filter(Boolean).map(a => `<span class="area-tag">${esc(a.trim())}</span>`).join('');
+    const areaArr = Array.isArray(c.area) ? c.area : (c.area || '').split(',').filter(Boolean).map(a => a.trim());
+    const areaTags = areaArr.map(a => `<span class="area-tag">${esc(a)}</span>`).join('');
     const replyMark = (c.needsReply === true || c.needsReply === 'true') ? '<span class="badge badge-reply">要返信</span>' : (c.needsReply === 'waiting' ? '<span class="badge" style="background:#fff3cd;color:#856404;">待ち</span>' : '');
     const dateStr = c.updatedAt ? formatDate(c.updatedAt) : '-';
     return `<tr onclick="openDetail('${c.id}')" style="cursor:pointer;">
@@ -507,7 +511,11 @@ function openDetail(id) {
   document.getElementById('dStartDate').textContent = c.startDate || '-';
 
   document.getElementById('dStatus').value = c.status || '紹介受領';
-  document.getElementById('dArea').value = c.area || '';
+  // エリアチェックボックスをセット
+  const cAreas = Array.isArray(c.area) ? c.area : (c.area || '').split(',').filter(Boolean).map(a => a.trim());
+  document.querySelectorAll('#dAreaChecks input[type="checkbox"]').forEach(cb => {
+    cb.checked = cAreas.includes(cb.value);
+  });
   document.getElementById('dHandler').value = c.handler || '';
   document.getElementById('dNeedsReply').value = String(c.needsReply || 'false');
   document.getElementById('dNotes').value = c.notes || '';
@@ -531,9 +539,12 @@ function markDetailDirty() {
 
 async function saveDetail() {
   if (!currentDetailId) return;
+  // エリアチェックボックスから配列を取得
+  const selectedAreas = [];
+  document.querySelectorAll('#dAreaChecks input[type="checkbox"]:checked').forEach(cb => selectedAreas.push(cb.value));
   const updates = {
     status: document.getElementById('dStatus').value,
-    area: document.getElementById('dArea').value,
+    area: selectedAreas,
     handler: document.getElementById('dHandler').value,
     needsReply: document.getElementById('dNeedsReply').value === 'true' ? true : (document.getElementById('dNeedsReply').value === 'waiting' ? 'waiting' : false),
     notes: document.getElementById('dNotes').value,
