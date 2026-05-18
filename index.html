@@ -104,6 +104,11 @@ tbody td { padding: 7px 6px; vertical-align: top; }
 .toast.show { display: block; animation: fadeInOut 2.5s; }
 @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
 
+/* ===== Modal ===== */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 300; justify-content: center; align-items: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 12px; padding: 24px; max-width: 480px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+
 /* ===== Loading ===== */
 .loading { text-align: center; padding: 40px; color: #999; }
 
@@ -140,6 +145,8 @@ tbody td { padding: 7px 6px; vertical-align: top; }
     <h1>候補者ダッシュボード</h1>
     <div class="header-right">
       <span class="user-info" id="userInfo"></span>
+      <button class="btn btn-small" style="background:rgba(255,255,255,0.2);color:#fff;" onclick="location.reload()" title="リロード">&#x21bb;</button>
+      <button class="btn btn-small" style="background:rgba(255,255,255,0.2);color:#fff;display:none;" onclick="openAdminModal()" id="btnAdmin">権限管理</button>
       <button class="btn btn-logout" onclick="doLogout()">ログアウト</button>
     </div>
   </div>
@@ -281,6 +288,28 @@ tbody td { padding: 7px 6px; vertical-align: top; }
   </div>
 </div>
 
+<!-- ===== 権限管理モーダル ===== -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal">
+    <h3 style="margin-bottom:12px;color:#1a5276;">権限管理</h3>
+    <div style="margin-bottom:12px;">
+      <input type="email" id="addUserEmail" placeholder="メールアドレス" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;margin-bottom:8px;">
+      <div style="display:flex;gap:8px;">
+        <select id="addUserRole" style="padding:6px;font-size:13px;flex:1;">
+          <option value="admin">管理者（全操作）</option>
+          <option value="editor" selected>編集者（ステータス・メモ変更可）</option>
+          <option value="viewer">閲覧者（閲覧のみ）</option>
+        </select>
+        <button class="btn btn-primary" onclick="addUser()">追加</button>
+      </div>
+    </div>
+    <div id="userList"></div>
+    <div style="margin-top:12px;text-align:right;">
+      <button class="btn btn-secondary" onclick="closeAdminModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Toast ===== -->
 <div class="toast" id="toast"></div>
 
@@ -324,6 +353,7 @@ auth.onAuthStateChanged(async user => {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('userInfo').textContent = user.displayName || user.email;
     await checkUserRole(user);
+    applyRoleUI();
     loadCandidates();
   } else {
     currentUser = null;
@@ -520,6 +550,15 @@ function openDetail(id) {
   document.getElementById('dNeedsReply').value = String(c.needsReply || 'false');
   document.getElementById('dNotes').value = c.notes || '';
 
+  // 閲覧者は編集不可
+  const isReadOnly = userRole === 'viewer';
+  document.getElementById('dStatus').disabled = isReadOnly;
+  document.querySelectorAll('#dAreaChecks input[type="checkbox"]').forEach(cb => cb.disabled = isReadOnly);
+  document.getElementById('dHandler').readOnly = isReadOnly;
+  document.getElementById('dNeedsReply').disabled = isReadOnly;
+  document.getElementById('dNotes').readOnly = isReadOnly;
+  document.getElementById('btnSaveDetail').style.display = isReadOnly ? 'none' : '';
+
   document.getElementById('detailOverlay').classList.add('open');
   document.getElementById('detailPanel').classList.add('open');
 }
@@ -557,6 +596,61 @@ async function saveDetail() {
     showToast('保存しました');
   } catch (e) {
     alert('保存に失敗しました: ' + e.message);
+  }
+}
+
+// ===== 権限管理 =====
+function openAdminModal() { document.getElementById('adminModal').classList.add('show'); renderUserList(); }
+function closeAdminModal() { document.getElementById('adminModal').classList.remove('show'); }
+
+async function addUser() {
+  const email = document.getElementById('addUserEmail').value.trim();
+  const role = document.getElementById('addUserRole').value;
+  if (!email) return;
+  await db.collection('users').doc(email).set({ email, role, createdAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+  document.getElementById('addUserEmail').value = '';
+  renderUserList();
+  showToast(email + ' を追加しました');
+}
+
+async function removeUser(email) {
+  if (email === currentUser.email) { alert('自分は削除できません'); return; }
+  if (!confirm(email + ' を削除しますか？')) return;
+  await db.collection('users').doc(email).delete();
+  renderUserList();
+}
+
+async function changeRole(email, newRole) {
+  await db.collection('users').doc(email).update({ role: newRole });
+  renderUserList();
+}
+
+async function renderUserList() {
+  const snap = await db.collection('users').get();
+  const roleName = { admin: '管理者', editor: '編集者', viewer: '閲覧者' };
+  let html = '<table style="width:100%;min-width:auto;font-size:12px;border-collapse:collapse;"><tr style="border-bottom:1px solid #ddd;"><th style="text-align:left;padding:4px;">メール</th><th style="padding:4px;">権限</th><th style="padding:4px;">操作</th></tr>';
+  snap.forEach(doc => {
+    const u = doc.data();
+    const isSelf = u.email === currentUser.email;
+    html += `<tr style="border-bottom:1px solid #eee;">
+      <td style="text-align:left;padding:4px;font-size:11px;">${u.email}</td>
+      <td style="padding:4px;"><select onchange="changeRole('${u.email}',this.value)" ${isSelf ? 'disabled' : ''} style="font-size:11px;padding:2px;">
+        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>管理者</option>
+        <option value="editor" ${u.role === 'editor' ? 'selected' : ''}>編集者</option>
+        <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>閲覧者</option>
+      </select></td>
+      <td style="padding:4px;text-align:center;">${isSelf ? '-' : '<button class="btn btn-warn btn-small" onclick="removeUser(\'' + u.email + '\')">削除</button>'}</td>
+    </tr>`;
+  });
+  document.getElementById('userList').innerHTML = html + '</table>';
+}
+
+function applyRoleUI() {
+  // 管理者のみ権限管理ボタン表示
+  document.getElementById('btnAdmin').style.display = userRole === 'admin' ? '' : 'none';
+  // 閲覧者は編集不可
+  if (userRole === 'viewer') {
+    document.getElementById('btnSaveDetail').style.display = 'none';
   }
 }
 
