@@ -84,6 +84,8 @@ tbody td { padding: 7px 6px; vertical-align: top; }
 .area-check { display: inline-flex; align-items: center; gap: 3px; padding: 4px 10px; border: 1px solid #ddd; border-radius: 16px; font-size: 12px; cursor: pointer; user-select: none; transition: all 0.15s; }
 .area-check:has(input:checked) { background: #d6eaf8; border-color: #2471a3; color: #2471a3; font-weight: 600; }
 .area-check input { display: none; }
+.tag-pitched { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; background: #d5f5e3; color: #1e8449; font-weight: 600; }
+.tag-not-pitched { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; background: #f2f3f4; color: #909497; }
 
 /* ===== Detail Panel (モバイル対応) ===== */
 .detail-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 100; }
@@ -225,6 +227,7 @@ tbody td { padding: 7px 6px; vertical-align: top; }
           <th class="col-agent-email">メール</th>
           <th class="col-status">ステータス</th>
           <th class="col-area">エリア</th>
+          <th style="min-width:55px;text-align:center;">外来PJ</th>
           <th class="col-handler">対応者</th>
           <th class="col-date">更新日</th>
           <th class="col-actions"></th>
@@ -277,6 +280,13 @@ tbody td { padding: 7px 6px; vertical-align: top; }
       <label class="area-check"><input type="checkbox" value="清瀬" onchange="markDetailDirty()"> 清瀬</label>
       <label class="area-check"><input type="checkbox" value="足立" onchange="markDetailDirty()"> 足立</label>
     </div>
+  </div>
+  <div class="detail-field">
+    <label>外来PJ打診</label>
+    <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+      <input type="checkbox" id="dOutpatientPitched" onchange="markDetailDirty()" style="width:16px;height:16px;">
+      打診済み
+    </label>
   </div>
   <div class="detail-field">
     <label>対応者</label>
@@ -356,6 +366,7 @@ tbody td { padding: 7px 6px; vertical-align: top; }
         <li><strong>上部:</strong> JS ID・名前・年齢/性別・居住地・担当者・経験・希望年収・入職時期（読み取り専用）</li>
         <li><strong>ステータス:</strong> 紹介受領 → 書類選考中 → 面接調整中 → 面接確定 → 面接済み → 入社確定。またはいつでも不採用/辞退/見送り/保留に変更可</li>
         <li><strong>エリア:</strong> 複数選択可（チェックボックス式）。城北/東葛/越谷/清瀬/足立</li>
+        <li><strong>外来PJ打診:</strong> 越谷・清瀬新店の外来プロジェクトを案内済みかどうか（エリアタグとは独立したフラグ）</li>
         <li><strong>対応者:</strong> 社内で誰が対応中か記録</li>
         <li><strong>返信要:</strong> 「要」= こちらからアクション必要、「待ち」= 先方返信待ち、「不要」= 対応不要</li>
         <li><strong>備考メモ:</strong> 自由記述。面接日程・条件交渉内容・判断メモなどを記録</li>
@@ -583,7 +594,7 @@ function applyFilters() {
 function renderTable(list) {
   const tbody = document.getElementById('candidateBody');
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:24px;color:#999;">該当する候補者はいません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:24px;color:#999;">該当する候補者はいません</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(c => {
@@ -602,6 +613,7 @@ function renderTable(list) {
       <td class="col-agent-email" style="font-size:10px;">${esc(c.agentEmail || '-')}</td>
       <td class="col-status">${statusBadge} ${replyMark}</td>
       <td class="col-area">${areaTags || '-'}</td>
+      <td style="text-align:center;">${c.outpatientPitched ? '<span class="tag-pitched">済</span>' : '<span class="tag-not-pitched">未</span>'}</td>
       <td class="col-handler">${esc(c.handler || '-')}</td>
       <td class="col-date">${dateStr}</td>
       <td class="col-actions"><span style="font-size:16px;">›</span></td>
@@ -646,6 +658,7 @@ function openDetail(id) {
   document.querySelectorAll('#dAreaChecks input[type="checkbox"]').forEach(cb => {
     cb.checked = cAreas.includes(cb.value);
   });
+  document.getElementById('dOutpatientPitched').checked = !!c.outpatientPitched;
   document.getElementById('dHandler').value = c.handler || '';
   document.getElementById('dNeedsReply').value = String(c.needsReply || 'false');
   document.getElementById('dNotes').value = c.notes || '';
@@ -654,6 +667,7 @@ function openDetail(id) {
   const isReadOnly = userRole === 'viewer';
   document.getElementById('dStatus').disabled = isReadOnly;
   document.querySelectorAll('#dAreaChecks input[type="checkbox"]').forEach(cb => cb.disabled = isReadOnly);
+  document.getElementById('dOutpatientPitched').disabled = isReadOnly;
   document.getElementById('dHandler').readOnly = isReadOnly;
   document.getElementById('dNeedsReply').disabled = isReadOnly;
   document.getElementById('dNotes').readOnly = isReadOnly;
@@ -684,6 +698,7 @@ async function saveDetail() {
   const updates = {
     status: document.getElementById('dStatus').value,
     area: selectedAreas,
+    outpatientPitched: document.getElementById('dOutpatientPitched').checked,
     handler: document.getElementById('dHandler').value,
     needsReply: document.getElementById('dNeedsReply').value === 'true' ? true : (document.getElementById('dNeedsReply').value === 'waiting' ? 'waiting' : false),
     notes: document.getElementById('dNotes').value,
