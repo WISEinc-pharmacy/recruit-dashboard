@@ -112,6 +112,17 @@ tbody td { padding: 7px 6px; vertical-align: top; }
 /* ===== Loading ===== */
 .loading { text-align: center; padding: 40px; color: #999; }
 
+/* ===== Help Modal ===== */
+.help-content { font-size: 13px; line-height: 1.7; }
+.help-content h4 { color: #1a5276; margin: 16px 0 6px; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+.help-content h4:first-child { margin-top: 0; }
+.help-content ul { padding-left: 20px; margin: 4px 0 8px; }
+.help-content li { margin-bottom: 3px; }
+.help-content .key { display: inline-block; background: #f0f0f0; padding: 1px 6px; border-radius: 3px; font-family: monospace; font-size: 12px; }
+.help-content table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+.help-content table th, .help-content table td { border: 1px solid #e0e0e0; padding: 5px 8px; text-align: left; }
+.help-content table th { background: #f8f9fa; font-weight: 600; }
+
 /* ===== レスポンシブ ===== */
 @media (max-width: 768px) {
   .header h1 { font-size: 14px; }
@@ -145,7 +156,8 @@ tbody td { padding: 7px 6px; vertical-align: top; }
     <h1>候補者ダッシュボード</h1>
     <div class="header-right">
       <span class="user-info" id="userInfo"></span>
-      <button class="btn btn-small" style="background:rgba(255,255,255,0.2);color:#fff;" onclick="location.reload()">更新</button>
+      <button class="btn btn-small" style="background:rgba(255,255,255,0.2);color:#fff;" onclick="location.reload()">取得情報の反映</button>
+      <button class="btn btn-small" style="background:rgba(255,255,255,0.2);color:#fff;" onclick="openHelpModal()">マニュアル</button>
       <button class="btn btn-small" style="background:rgba(255,255,255,0.2);color:#fff;display:none;" onclick="openAdminModal()" id="btnAdmin">権限管理</button>
       <button class="btn btn-logout" onclick="doLogout()">ログアウト</button>
     </div>
@@ -306,6 +318,94 @@ tbody td { padding: 7px 6px; vertical-align: top; }
     <div id="userList"></div>
     <div style="margin-top:12px;text-align:right;">
       <button class="btn btn-secondary" onclick="closeAdminModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== マニュアルモーダル ===== -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal" style="max-width:600px;max-height:85vh;">
+    <h3 style="margin-bottom:12px;color:#1a5276;display:flex;justify-content:space-between;align-items:center;">
+      マニュアル・仕様
+      <button style="background:none;border:none;font-size:20px;color:#999;cursor:pointer;" onclick="closeHelpModal()">&times;</button>
+    </h3>
+    <div class="help-content">
+
+      <h4>概要</h4>
+      <p>外来プロジェクト（越谷・清瀬新店）の採用候補者を一元管理するダッシュボードです。結〈yui〉がrecruit@メールを5分ごとにポーリングし、新規候補者を自動登録します。Slackボタン操作もリアルタイム連動します。</p>
+
+      <h4>データの流れ</h4>
+      <ul>
+        <li><strong>自動登録:</strong> recruit@にメール着信 → 結〈yui〉が5分以内にSlack投稿＋Firestoreに自動書き込み → ダッシュボードにリアルタイム反映</li>
+        <li><strong>ステータス連動:</strong> Slackで「城北」「東葛」「全エリア」「不採用」ボタン押下 → Firestoreのエリア・ステータスが自動更新</li>
+        <li><strong>手動更新:</strong> ダッシュボード上で候補者をタップ → サイドパネルからステータス・エリア・メモ等を編集・保存</li>
+      </ul>
+
+      <h4>画面の見方</h4>
+      <table>
+        <tr><th>要素</th><th>説明</th></tr>
+        <tr><td>上部カード（全件/面接確定/調整中/選考中/終了/返信要）</td><td>タップでその区分にフィルタ。数字は該当件数</td></tr>
+        <tr><td>検索バー</td><td>名前・JS ID・エリア・担当者名などフリーテキスト検索</td></tr>
+        <tr><td>エリアフィルタ</td><td>城北/東葛/越谷/清瀬/足立で絞り込み</td></tr>
+        <tr><td>ソート</td><td>更新日順（新/古）・年齢順・ステータス順</td></tr>
+        <tr><td>候補者行タップ</td><td>右からサイドパネルが開き、詳細表示・編集が可能</td></tr>
+      </table>
+
+      <h4>サイドパネル（候補者詳細）</h4>
+      <ul>
+        <li><strong>上部:</strong> JS ID・名前・年齢/性別・居住地・担当者・経験・希望年収・入職時期（読み取り専用）</li>
+        <li><strong>ステータス:</strong> 紹介受領 → 書類選考中 → 面接調整中 → 面接確定 → 面接済み → 入社確定。またはいつでも不採用/辞退/見送り/保留に変更可</li>
+        <li><strong>エリア:</strong> 複数選択可（チェックボックス式）。城北/東葛/越谷/清瀬/足立</li>
+        <li><strong>対応者:</strong> 社内で誰が対応中か記録</li>
+        <li><strong>返信要:</strong> 「要」= こちらからアクション必要、「待ち」= 先方返信待ち、「不要」= 対応不要</li>
+        <li><strong>備考メモ:</strong> 自由記述。面接日程・条件交渉内容・判断メモなどを記録</li>
+        <li>編集後は<span class="key">保存</span>ボタンで確定。保存前に閉じようとすると確認ダイアログが表示されます</li>
+      </ul>
+
+      <h4>ステータスの定義</h4>
+      <table>
+        <tr><th>ステータス</th><th>意味</th></tr>
+        <tr><td>紹介受領</td><td>エージェントから紹介を受けた初期状態</td></tr>
+        <tr><td>書類選考中</td><td>履歴書・職務経歴書を確認中</td></tr>
+        <tr><td>面接調整中</td><td>面接日程を調整中</td></tr>
+        <tr><td>面接確定</td><td>面接日時が確定</td></tr>
+        <tr><td>面接済み</td><td>面接実施済み・結果判断中</td></tr>
+        <tr><td>入社確定</td><td>内定承諾・入社日確定</td></tr>
+        <tr><td>不採用</td><td>選考の結果お断り</td></tr>
+        <tr><td>辞退</td><td>候補者側から辞退</td></tr>
+        <tr><td>見送り</td><td>条件不一致等で見送り</td></tr>
+        <tr><td>保留</td><td>判断保留中</td></tr>
+      </table>
+
+      <h4>権限管理（管理者のみ）</h4>
+      <ul>
+        <li><strong>管理者:</strong> 全操作可能＋ユーザー追加/削除/権限変更</li>
+        <li><strong>編集者:</strong> 候補者のステータス・エリア・メモ等を編集可能</li>
+        <li><strong>閲覧者:</strong> 閲覧のみ（編集ボタン非表示）</li>
+        <li>初回ログインユーザーが自動的に管理者になります</li>
+        <li>未登録ユーザーはログインできません（管理者が事前に追加する必要あり）</li>
+      </ul>
+
+      <h4>技術仕様</h4>
+      <ul>
+        <li><strong>Firebase PJ:</strong> wise-recruit-db5f3（個人情報分離のため独立プロジェクト）</li>
+        <li><strong>認証:</strong> Firebase Auth（Google OAuth）</li>
+        <li><strong>DB:</strong> Cloud Firestore（asia-northeast1）</li>
+        <li><strong>ホスティング:</strong> GitHub Pages（wiseinc-pharmacy/recruit-dashboard）</li>
+        <li><strong>リアルタイム更新:</strong> Firestore onSnapshot（ページを開いている間は自動反映）</li>
+        <li><strong>yui連携:</strong> recruit_bot.mjsがfirebase-admin SDKでFirestoreに書き込み</li>
+      </ul>
+
+      <h4>注意事項</h4>
+      <ul>
+        <li>yui自動更新は「新規メール受信時」と「Slackボタン操作時」のみ。スレッド内のやり取りを読んで判断する更新は手動です</li>
+        <li>候補者の個人情報を含むため、権限のないユーザーを追加しないでください</li>
+        <li>備考メモは誰が書いたか記録されません。重要な判断は日付と名前を添えて記入してください</li>
+      </ul>
+
+    </div>
+    <div style="margin-top:16px;text-align:right;">
+      <button class="btn btn-secondary" onclick="closeHelpModal()">閉じる</button>
     </div>
   </div>
 </div>
@@ -602,6 +702,8 @@ async function saveDetail() {
 // ===== 権限管理 =====
 function openAdminModal() { document.getElementById('adminModal').classList.add('show'); renderUserList(); }
 function closeAdminModal() { document.getElementById('adminModal').classList.remove('show'); }
+function openHelpModal() { document.getElementById('helpModal').classList.add('show'); }
+function closeHelpModal() { document.getElementById('helpModal').classList.remove('show'); }
 
 async function addUser() {
   const email = document.getElementById('addUserEmail').value.trim();
