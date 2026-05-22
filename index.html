@@ -304,6 +304,24 @@ tbody td { padding: 7px 6px; vertical-align: top; }
     <label>備考メモ</label>
     <textarea id="dNotes" placeholder="メモを入力..." oninput="markDetailDirty()"></textarea>
   </div>
+  <div class="detail-field">
+    <label>面接の感想</label>
+    <textarea id="dInterviewNotes" rows="6" placeholder="面接後の評価・印象を記入..." oninput="markDetailDirty()" style="background:#fffdf0;"></textarea>
+  </div>
+  <div class="detail-field">
+    <label>録画リンク</label>
+    <div style="display:flex;gap:4px;align-items:center;">
+      <input type="url" id="dMeetRecordingUrl" placeholder="Google Driveリンク" oninput="markDetailDirty()" style="flex:1;">
+      <a id="dMeetRecordingLink" href="#" target="_blank" style="display:none;font-size:11px;white-space:nowrap;">開く</a>
+    </div>
+  </div>
+  <div class="detail-field">
+    <label>Gemini要約（Docs URL）</label>
+    <div style="display:flex;gap:4px;align-items:center;">
+      <input type="url" id="dGeminiSummary" placeholder="Gemini要約のDocs URL" oninput="markDetailDirty()" style="flex:1;background:#f0f7ff;">
+      <a id="dGeminiSummaryLink" href="#" target="_blank" style="display:none;font-size:11px;white-space:nowrap;">開く</a>
+    </div>
+  </div>
   <div class="detail-actions">
     <button class="btn btn-primary" id="btnSaveDetail" onclick="saveDetail()" disabled>保存</button>
     <button class="btn btn-secondary" onclick="closeDetail()">閉じる</button>
@@ -662,6 +680,13 @@ function openDetail(id) {
   document.getElementById('dHandler').value = c.handler || '';
   document.getElementById('dNeedsReply').value = String(c.needsReply || 'false');
   document.getElementById('dNotes').value = c.notes || '';
+  document.getElementById('dInterviewNotes').value = c.interviewNotes || '';
+  document.getElementById('dMeetRecordingUrl').value = c.meetRecordingUrl || '';
+  const recLink = document.getElementById('dMeetRecordingLink');
+  if (c.meetRecordingUrl) { recLink.href = c.meetRecordingUrl; recLink.style.display = ''; } else { recLink.style.display = 'none'; }
+  document.getElementById('dGeminiSummary').value = c.geminiSummaryUrl || '';
+  const sumLink = document.getElementById('dGeminiSummaryLink');
+  if (c.geminiSummaryUrl) { sumLink.href = c.geminiSummaryUrl; sumLink.style.display = ''; } else { sumLink.style.display = 'none'; }
 
   // 閲覧者は編集不可
   const isReadOnly = userRole === 'viewer';
@@ -671,6 +696,10 @@ function openDetail(id) {
   document.getElementById('dHandler').readOnly = isReadOnly;
   document.getElementById('dNeedsReply').disabled = isReadOnly;
   document.getElementById('dNotes').readOnly = isReadOnly;
+  document.getElementById('dInterviewNotes').readOnly = isReadOnly;
+  document.getElementById('dMeetRecordingUrl').readOnly = isReadOnly;
+  document.getElementById('dGeminiSummary').readOnly = isReadOnly;
+  document.getElementById('dGeminiSummaryLink').style.pointerEvents = isReadOnly ? '' : '';
   document.getElementById('btnSaveDetail').style.display = isReadOnly ? 'none' : '';
 
   document.getElementById('detailOverlay').classList.add('open');
@@ -702,6 +731,9 @@ async function saveDetail() {
     handler: document.getElementById('dHandler').value,
     needsReply: document.getElementById('dNeedsReply').value === 'true' ? true : (document.getElementById('dNeedsReply').value === 'waiting' ? 'waiting' : false),
     notes: document.getElementById('dNotes').value,
+    interviewNotes: document.getElementById('dInterviewNotes').value,
+    meetRecordingUrl: document.getElementById('dMeetRecordingUrl').value,
+    geminiSummaryUrl: document.getElementById('dGeminiSummary').value,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   try {
