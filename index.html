@@ -48,10 +48,12 @@ body { font-family: 'Segoe UI', 'Yu Gothic UI', sans-serif; background: #f5f7fa;
 .filter-bar { padding: 8px 16px; background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .filter-bar input, .filter-bar select { padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
 .filter-bar input[type="text"] { width: 180px; }
+.tag-filter-group { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.tag-filter-label { font-size: 11px; color: #667085; font-weight: 600; }
 @media (max-width: 600px) { .filter-bar input[type="text"] { width: 100%; } }
 
 /* ===== Table ===== */
-.table-wrap { overflow-x: auto; padding: 0 8px 80px; }
+.table-wrap { overflow-x: auto; padding: 0 8px 24px; }
 table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 12px; }
 thead th { background: #f8f9fa; padding: 8px 6px; text-align: left; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 2; white-space: nowrap; cursor: pointer; user-select: none; }
 thead th:hover { background: #e9ecef; }
@@ -80,12 +82,29 @@ tbody td { padding: 7px 6px; vertical-align: top; }
 .badge-hired { background: #abebc6; color: #196f3d; }
 .badge-reply { background: #fadbd8; color: #c0392b; }
 .area-tag { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; background: #eee; margin: 1px; }
+.area-tag.tag-tokatsu { background: #d6eaf8; color: #1f618d; }
+.area-tag.tag-johoku { background: #e8daef; color: #6c3483; }
+.area-tag.tag-outpatient { background: #d5f5e3; color: #1e8449; }
+.area-tag.tag-unassigned { background: #f2f3f4; color: #626567; }
 .area-checkboxes { display: flex; flex-wrap: wrap; gap: 6px; }
 .area-check { display: inline-flex; align-items: center; gap: 3px; padding: 4px 10px; border: 1px solid #ddd; border-radius: 16px; font-size: 12px; cursor: pointer; user-select: none; transition: all 0.15s; }
 .area-check:has(input:checked) { background: #d6eaf8; border-color: #2471a3; color: #2471a3; font-weight: 600; }
 .area-check input { display: none; }
 .tag-pitched { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; background: #d5f5e3; color: #1e8449; font-weight: 600; }
 .tag-not-pitched { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; background: #f2f3f4; color: #909497; }
+
+/* ===== Work Comparison ===== */
+.comparison-section { padding: 12px 8px 80px; }
+.comparison-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 6px; }
+.comparison-header h2 { font-size: 15px; color: #1a5276; font-weight: 700; }
+.comparison-count { font-size: 11px; color: #667085; }
+.work-table-wrap { overflow-x: auto; background: #fff; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+.work-table { min-width: 980px; margin-top: 0; }
+.work-table th { cursor: default; }
+.work-table td { line-height: 1.45; }
+.work-candidate { font-weight: 700; }
+.work-sub { font-size: 10px; color: #667085; margin-top: 2px; }
+.work-note { max-width: 280px; color: #475467; }
 
 /* ===== Detail Panel (モバイル対応) ===== */
 .detail-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 100; }
@@ -183,10 +202,6 @@ tbody td { padding: 7px 6px; vertical-align: top; }
       <div class="count" id="countScreening">0</div>
       <div class="label">選考中</div>
     </div>
-    <div class="summary-card sc-closed" data-filter="closed" onclick="filterByStatus('closed', this)">
-      <div class="count" id="countClosed">0</div>
-      <div class="label">終了</div>
-    </div>
     <div class="summary-card sc-reply" data-filter="reply" onclick="filterByStatus('reply', this)">
       <div class="count" id="countReply">0</div>
       <div class="label">返信要</div>
@@ -195,15 +210,17 @@ tbody td { padding: 7px 6px; vertical-align: top; }
 
   <!-- Filter Bar -->
   <div class="filter-bar">
-    <input type="text" id="searchInput" placeholder="名前・ID・エリアで検索..." oninput="applyFilters()">
-    <select id="areaFilter" onchange="applyFilters()">
-      <option value="">全エリア</option>
-      <option value="城北">城北</option>
-      <option value="東葛">東葛</option>
-      <option value="越谷">越谷</option>
-      <option value="清瀬">清瀬</option>
-      <option value="足立">足立</option>
-    </select>
+    <input type="text" id="searchInput" placeholder="名前・ID・タグ・勤務条件で検索..." oninput="applyFilters()">
+    <div class="tag-filter-group">
+      <span class="tag-filter-label">タグ</span>
+      <select id="areaFilter" onchange="applyFilters()">
+        <option value="">すべて</option>
+        <option value="東葛">東葛</option>
+        <option value="城北">城北</option>
+        <option value="外来">外来</option>
+        <option value="未振り分け">未振り分け</option>
+      </select>
+    </div>
     <select id="sortSelect" onchange="applyFilters()">
       <option value="updatedAt-desc">更新日 新しい順</option>
       <option value="updatedAt-asc">更新日 古い順</option>
@@ -226,7 +243,7 @@ tbody td { padding: 7px 6px; vertical-align: top; }
           <th class="col-agent">担当者</th>
           <th class="col-agent-email">メール</th>
           <th class="col-status">ステータス</th>
-          <th class="col-area">エリア</th>
+          <th class="col-area">タグ</th>
           <th style="min-width:55px;text-align:center;">外来PJ</th>
           <th class="col-handler">対応者</th>
           <th class="col-date">更新日</th>
@@ -237,6 +254,31 @@ tbody td { padding: 7px 6px; vertical-align: top; }
     </table>
     <div class="loading" id="loadingMsg">読み込み中...</div>
   </div>
+
+  <section class="comparison-section">
+    <div class="comparison-header">
+      <h2>勤務条件比較</h2>
+      <div class="comparison-count" id="workComparisonCount">0件</div>
+    </div>
+    <div class="work-table-wrap">
+      <table class="work-table">
+        <thead>
+          <tr>
+            <th>候補</th>
+            <th>タグ</th>
+            <th>ステータス</th>
+            <th>開始</th>
+            <th>曜日・日数</th>
+            <th>時間</th>
+            <th>雇用/契約</th>
+            <th>給与/単価</th>
+            <th>判断メモ</th>
+          </tr>
+        </thead>
+        <tbody id="workComparisonBody"></tbody>
+      </table>
+    </div>
+  </section>
 </div>
 
 <!-- ===== Detail Panel ===== -->
@@ -274,11 +316,9 @@ tbody td { padding: 7px 6px; vertical-align: top; }
   <div class="detail-field">
     <label>エリア（複数選択可）</label>
     <div class="area-checkboxes" id="dAreaChecks">
-      <label class="area-check"><input type="checkbox" value="城北" onchange="markDetailDirty()"> 城北</label>
       <label class="area-check"><input type="checkbox" value="東葛" onchange="markDetailDirty()"> 東葛</label>
-      <label class="area-check"><input type="checkbox" value="越谷" onchange="markDetailDirty()"> 越谷</label>
-      <label class="area-check"><input type="checkbox" value="清瀬" onchange="markDetailDirty()"> 清瀬</label>
-      <label class="area-check"><input type="checkbox" value="足立" onchange="markDetailDirty()"> 足立</label>
+      <label class="area-check"><input type="checkbox" value="城北" onchange="markDetailDirty()"> 城北</label>
+      <label class="area-check"><input type="checkbox" value="外来" onchange="markDetailDirty()"> 外来</label>
     </div>
   </div>
   <div class="detail-field">
@@ -372,18 +412,19 @@ tbody td { padding: 7px 6px; vertical-align: top; }
       <h4>画面の見方</h4>
       <table>
         <tr><th>要素</th><th>説明</th></tr>
-        <tr><td>上部カード（全件/面接確定/調整中/選考中/終了/返信要）</td><td>タップでその区分にフィルタ。数字は該当件数</td></tr>
-        <tr><td>検索バー</td><td>名前・JS ID・エリア・担当者名などフリーテキスト検索</td></tr>
-        <tr><td>エリアフィルタ</td><td>城北/東葛/越谷/清瀬/足立で絞り込み</td></tr>
+        <tr><td>上部カード（全件/面接確定/調整中/選考中/返信要）</td><td>終了者を除いた候補者を区分別に表示。タップで絞り込み</td></tr>
+        <tr><td>検索バー</td><td>名前・JS ID・タグ・担当者・勤務条件などで検索</td></tr>
+        <tr><td>タグフィルタ</td><td>東葛/城北/外来/未振り分けで絞り込み。全域は3タグすべてに表示</td></tr>
         <tr><td>ソート</td><td>更新日順（新/古）・年齢順・ステータス順</td></tr>
         <tr><td>候補者行タップ</td><td>右からサイドパネルが開き、詳細表示・編集が可能</td></tr>
+        <tr><td>勤務条件比較</td><td>現在のフィルタ対象について、開始時期・曜日日数・時間・雇用/契約・単価を横並びで比較</td></tr>
       </table>
 
       <h4>サイドパネル（候補者詳細）</h4>
       <ul>
         <li><strong>上部:</strong> JS ID・名前・年齢/性別・居住地・担当者・経験・希望年収・入職時期（読み取り専用）</li>
         <li><strong>ステータス:</strong> 紹介受領 → 書類選考中 → 面接調整中 → 面接確定 → 面接済み → 入社確定。またはいつでも不採用/辞退/見送り/保留に変更可</li>
-        <li><strong>エリア:</strong> 複数選択可（チェックボックス式）。城北/東葛/越谷/清瀬/足立</li>
+        <li><strong>タグ:</strong> 複数選択可（チェックボックス式）。東葛/城北/外来。未選択の場合は未振り分けとして表示</li>
         <li><strong>外来PJ打診:</strong> 越谷・清瀬新店の外来プロジェクトを案内済みかどうか（エリアタグとは独立したフラグ）</li>
         <li><strong>対応者:</strong> 社内で誰が対応中か記録</li>
         <li><strong>返信要:</strong> 「要」= こちらからアクション必要、「待ち」= 先方返信待ち、「不要」= 対応不要</li>
@@ -534,6 +575,8 @@ const STATUS_GROUPS = {
   screening: ['紹介受領', '書類選考中', '保留'],
   closed: ['不採用', '辞退', '見送り', '入社確定']
 };
+const CLOSED_STATUSES = new Set(STATUS_GROUPS.closed);
+const TAGS = ['東葛', '城北', '外来'];
 
 function getStatusGroup(s) {
   for (const [g, list] of Object.entries(STATUS_GROUPS)) {
@@ -543,17 +586,17 @@ function getStatusGroup(s) {
 }
 
 function updateSummary() {
-  let counts = { all: allCandidates.length, confirmed: 0, adjusting: 0, screening: 0, closed: 0, reply: 0 };
-  allCandidates.forEach(c => {
+  const active = allCandidates.filter(c => !isClosedCandidate(c));
+  let counts = { all: active.length, confirmed: 0, adjusting: 0, screening: 0, reply: 0 };
+  active.forEach(c => {
     const g = getStatusGroup(c.status);
-    counts[g]++;
+    if (counts[g] !== undefined) counts[g]++;
     if (c.needsReply === true || c.needsReply === 'true' || c.needsReply === 'waiting') counts.reply++;
   });
   document.getElementById('countAll').textContent = counts.all;
   document.getElementById('countConfirmed').textContent = counts.confirmed;
   document.getElementById('countAdjusting').textContent = counts.adjusting;
   document.getElementById('countScreening').textContent = counts.screening;
-  document.getElementById('countClosed').textContent = counts.closed;
   document.getElementById('countReply').textContent = counts.reply;
 }
 
@@ -571,18 +614,24 @@ function applyFilters() {
   const sort = document.getElementById('sortSelect').value;
 
   let filtered = allCandidates.filter(c => {
+    if (isClosedCandidate(c)) return false;
     // Status group filter
     if (currentFilter === 'reply') {
       if (c.needsReply !== true && c.needsReply !== 'true' && c.needsReply !== 'waiting') return false;
     } else if (currentFilter !== 'all') {
       if (getStatusGroup(c.status) !== currentFilter) return false;
     }
-    // Area filter
-    const cAreaArr = Array.isArray(c.area) ? c.area : (c.area || '').split(',').filter(Boolean).map(a => a.trim());
-    if (areaF && !cAreaArr.includes(areaF)) return false;
+    // Tag filter
+    const tagArr = getCandidateTags(c);
+    if (areaF && !tagArr.includes(areaF)) return false;
     // Text search
     if (search) {
-      const hay = [c.jsId, c.name, c.location, c.agent, c.agentEmail, cAreaArr.join(' '), c.handler, c.notes].filter(Boolean).join(' ').toLowerCase();
+      const work = getWorkInfo(c);
+      const rawArea = getRawAreas(c).join(' ');
+      const hay = [
+        c.jsId, c.name, c.location, c.agent, c.agentEmail, tagArr.join(' '), rawArea,
+        c.handler, c.status, c.notes, work.start, work.days, work.time, work.type, work.compensation, work.memo
+      ].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
     }
     return true;
@@ -607,6 +656,69 @@ function applyFilters() {
   });
 
   renderTable(filtered);
+  renderWorkComparison(filtered);
+}
+
+function isClosedCandidate(c) {
+  return CLOSED_STATUSES.has(c.status);
+}
+
+function getRawAreas(c) {
+  if (Array.isArray(c.area)) return c.area.map(a => String(a).trim()).filter(Boolean);
+  return String(c.area || '').split(',').map(a => a.trim()).filter(Boolean);
+}
+
+function getCandidateTags(c) {
+  const raw = getRawAreas(c);
+  const joined = raw.join(' ');
+  const tags = new Set();
+
+  if (raw.length === 0) tags.add('未振り分け');
+  if (raw.some(a => a === '未振り分け' || a === '未分類')) tags.add('未振り分け');
+  if (raw.some(a => a === '全域' || a === '全エリア')) TAGS.forEach(t => tags.add(t));
+
+  if (raw.some(a => a.includes('東葛') || a.includes('柏'))) tags.add('東葛');
+  if (raw.some(a => a.includes('城北') || a.includes('足立'))) tags.add('城北');
+  if (raw.some(a => a.includes('外来') || a.includes('越谷') || a.includes('清瀬'))) tags.add('外来');
+
+  if (/東葛\s*(不要|対象外|見送り|非該当)/.test(joined)) tags.delete('東葛');
+  if (/城北\s*(不要|対象外|見送り|非該当)/.test(joined)) tags.delete('城北');
+  if (/外来(PJ)?\s*(不要|対象外|見送り|非該当)/.test(joined)) tags.delete('外来');
+
+  if (tags.size === 0) tags.add('未振り分け');
+  return Array.from(tags);
+}
+
+function tagClass(tag) {
+  if (tag === '東葛') return 'tag-tokatsu';
+  if (tag === '城北') return 'tag-johoku';
+  if (tag === '外来') return 'tag-outpatient';
+  return 'tag-unassigned';
+}
+
+function renderTagBadges(tags) {
+  return tags.map(tag => '<span class="area-tag ' + tagClass(tag) + '">' + esc(tag) + '</span>').join('');
+}
+
+function pickFirst(...values) {
+  for (const v of values) {
+    if (v !== undefined && v !== null && String(v).trim()) return String(v).trim();
+  }
+  return '-';
+}
+
+function getWorkInfo(c) {
+  const fd = c.freelanceDetails || {};
+  const timeParts = [fd.desiredStartTime || fd.startTime, fd.desiredEndTime || fd.endTime].filter(v => v && String(v).trim());
+  const memo = pickFirst(fd.latestComment, c.workConditionMemo, c.conditionMemo, c.notes);
+  return {
+    start: pickFirst(fd.startMonth, fd.startDate, c.startDate, c.availableStartDate, c.joinDate),
+    days: pickFirst(fd.desiredWorkDays, fd.desiredDays, fd.desiredDaysCount, c.desiredWorkDays, c.workDays, c.availableDays, c.workSchedule),
+    time: timeParts.length ? timeParts.join(' - ') : pickFirst(fd.desiredWorkTime, fd.workTime, c.desiredWorkTime, c.workTime, c.availableTime, c.shift),
+    type: pickFirst(c.employmentType, c.desiredEmploymentType, fd.contractType, fd.workStyle, fd.employmentType, c.type),
+    compensation: pickFirst(fd.hourlyRateWithFee, fd.hourlyRate, c.desiredSalary, c.salary, c.hourlyRate, c.compensation),
+    memo: memo === '-' ? '-' : memo.slice(0, 140)
+  };
 }
 
 function renderTable(list) {
@@ -617,8 +729,7 @@ function renderTable(list) {
   }
   tbody.innerHTML = list.map(c => {
     const statusBadge = getStatusBadge(c.status);
-    const areaArr = Array.isArray(c.area) ? c.area : (c.area || '').split(',').filter(Boolean).map(a => a.trim());
-    const areaTags = areaArr.map(a => `<span class="area-tag">${esc(a)}</span>`).join('');
+    const areaTags = renderTagBadges(getCandidateTags(c));
     const replyMark = (c.needsReply === true || c.needsReply === 'true') ? '<span class="badge badge-reply">要返信</span>' : (c.needsReply === 'waiting' ? '<span class="badge" style="background:#fff3cd;color:#856404;">待ち</span>' : '');
     const dateStr = c.updatedAt ? formatDate(c.updatedAt) : '-';
     return `<tr onclick="openDetail('${c.id}')" style="cursor:pointer;">
@@ -636,6 +747,33 @@ function renderTable(list) {
       <td class="col-date">${dateStr}</td>
       <td class="col-actions"><span style="font-size:16px;">›</span></td>
     </tr>`;
+  }).join('');
+}
+
+function renderWorkComparison(list) {
+  const tbody = document.getElementById('workComparisonBody');
+  const count = document.getElementById('workComparisonCount');
+  if (count) count.textContent = String(list.length) + '件';
+  if (!tbody) return;
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:18px;color:#999;">該当する候補者はいません</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(c => {
+    const w = getWorkInfo(c);
+    const name = c.name || c.jsId || '-';
+    const sub = [c.jsId, c.location, c.agent].filter(Boolean).join(' / ');
+    return '<tr onclick="openDetail(\'' + c.id + '\')" style="cursor:pointer;">' +
+      '<td><div class="work-candidate">' + esc(name) + '</div><div class="work-sub">' + esc(sub || '-') + '</div></td>' +
+      '<td>' + renderTagBadges(getCandidateTags(c)) + '</td>' +
+      '<td>' + getStatusBadge(c.status) + '</td>' +
+      '<td>' + esc(w.start) + '</td>' +
+      '<td>' + esc(w.days) + '</td>' +
+      '<td>' + esc(w.time) + '</td>' +
+      '<td>' + esc(w.type) + '</td>' +
+      '<td>' + esc(w.compensation) + '</td>' +
+      '<td class="work-note">' + esc(w.memo) + '</td>' +
+    '</tr>';
   }).join('');
 }
 
@@ -671,10 +809,10 @@ function openDetail(id) {
   document.getElementById('dStartDate').textContent = c.startDate || '-';
 
   document.getElementById('dStatus').value = c.status || '紹介受領';
-  // エリアチェックボックスをセット
-  const cAreas = Array.isArray(c.area) ? c.area : (c.area || '').split(',').filter(Boolean).map(a => a.trim());
+  // 表示タグのチェックボックスをセット
+  const cTags = getCandidateTags(c);
   document.querySelectorAll('#dAreaChecks input[type="checkbox"]').forEach(cb => {
-    cb.checked = cAreas.includes(cb.value);
+    cb.checked = cTags.includes(cb.value);
   });
   document.getElementById('dOutpatientPitched').checked = !!c.outpatientPitched;
   document.getElementById('dHandler').value = c.handler || '';
