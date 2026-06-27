@@ -334,6 +334,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
       <option value="不採用">不採用</option>
       <option value="辞退">辞退</option>
       <option value="見送り">見送り</option>
+      <option value="選考終了">選考終了</option>
       <option value="保留">保留</option>
     </select>
   </div>
@@ -438,7 +439,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
       <h4>データの流れ</h4>
       <ul>
         <li><strong>自動登録:</strong> recruit@にメール着信 → 結〈yui〉が5分以内にSlack投稿＋Firestoreに自動書き込み → ダッシュボードにリアルタイム反映</li>
-        <li><strong>ステータス連動:</strong> Slackで「城北」「東葛」「全エリア」「不採用」ボタン押下 → Firestoreのエリア・ステータスが自動更新</li>
+        <li><strong>ステータス連動:</strong> Slackで「城北」「東葛」「全エリア」「不採用」「選考終了」ボタン押下 → Firestoreのエリア・ステータスが自動更新</li>
         <li><strong>手動更新:</strong> ダッシュボード上で候補者をタップ → サイドパネルからステータス・エリア・メモ等を編集・保存</li>
       </ul>
 
@@ -477,6 +478,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
         <tr><td>不採用</td><td>選考の結果お断り</td></tr>
         <tr><td>辞退</td><td>候補者側から辞退</td></tr>
         <tr><td>見送り</td><td>条件不一致等で見送り</td></tr>
+        <tr><td>選考終了</td><td>対応不要として終了。Slackの選考終了ボタンと連動</td></tr>
         <tr><td>保留</td><td>判断保留中</td></tr>
       </table>
 
@@ -608,7 +610,7 @@ const STATUS_GROUPS = {
   confirmed: ['面接確定', '面接済み'],
   adjusting: ['面接調整中'],
   screening: ['紹介受領', '書類選考中', '保留'],
-  closed: ['不採用', '辞退', '見送り', '入社確定']
+  closed: ['不採用', '辞退', '見送り', '選考終了', '入社確定']
 };
 const CLOSED_STATUSES = new Set(STATUS_GROUPS.closed);
 const TAGS = ['東葛', '城北', '外来'];
@@ -709,7 +711,7 @@ function applyFilters() {
       va = parseInt(a.age) || 999;
       vb = parseInt(b.age) || 999;
     } else if (key === 'status') {
-      const order = ['面接確定', '面接済み', '面接調整中', '紹介受領', '書類選考中', '保留', '入社確定', '不採用', '辞退', '見送り'];
+      const order = ['面接確定', '面接済み', '面接調整中', '紹介受領', '書類選考中', '保留', '入社確定', '選考終了', '不採用', '辞退', '見送り'];
       va = order.indexOf(a.status); if (va < 0) va = 99;
       vb = order.indexOf(b.status); if (vb < 0) vb = 99;
     } else if (key === 'store') {
@@ -864,7 +866,7 @@ function getStatusBadge(status) {
     '面接調整中': 'badge-adjusting',
     '面接確定': 'badge-confirmed', '面接済み': 'badge-confirmed',
     '入社確定': 'badge-hired',
-    '不採用': 'badge-rejected', '辞退': 'badge-declined', '見送り': 'badge-passed',
+    '不採用': 'badge-rejected', '辞退': 'badge-declined', '見送り': 'badge-passed', '選考終了': 'badge-passed',
     '保留': 'badge-received'
   };
   return `<span class="badge ${map[status] || 'badge-received'}">${esc(status || '不明')}</span>`;
