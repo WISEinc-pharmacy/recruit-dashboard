@@ -1,0 +1,10 @@
+serviceAccountKey.json
+*.json
+node_modules/
+.env
+
+# Local Firestore admin maintenance scripts. Do not publish candidate data or admin-only tooling.
+import_candidates.mjs
+update_interview_notes.mjs
+package.json
+package-lock.json
