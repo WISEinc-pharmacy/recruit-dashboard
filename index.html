@@ -55,6 +55,8 @@ body { font-family: 'Segoe UI', 'Yu Gothic UI', sans-serif; background: #f5f7fa;
 .tag-filter-btn.active { background: #1a5276; border-color: #1a5276; color: #fff; }
 .tag-filter-btn:hover { background: #edf4f8; }
 .tag-filter-btn.active:hover { background: #164765; }
+.filter-summary { min-height: 38px; padding: 8px 14px; border: 1px solid #d0d5dd; border-radius: 6px; background: #f8fafc; color: #344054; font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px; }
+.filter-summary strong { color: #1a5276; }
 @media (max-width: 600px) { .filter-bar input[type="text"] { width: 100%; } }
 
 /* ===== Table ===== */
@@ -239,6 +241,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
         <button type="button" class="tag-filter-btn" data-store="清瀬" onclick="setStoreFilter('清瀬', this)">清瀬</button>
       </div>
     </div>
+    <div class="filter-summary" id="filterSummary">絞り込み: 選考中</div>
     <select id="sortSelect" onchange="applyFilters()">
       <option value="updatedAt-desc">更新日 新しい順</option>
       <option value="updatedAt-asc">更新日 古い順</option>
@@ -655,6 +658,14 @@ function setStoreFilter(store, el) {
   applyFilters();
 }
 
+function updateFilterSummary() {
+  const tag = currentTagFilter || 'すべて';
+  const store = currentStoreFilter || 'すべて';
+  const mode = currentTagFilter && currentStoreFilter ? 'タグと店舗の両方に一致' : '選択条件に一致';
+  const el = document.getElementById('filterSummary');
+  if (el) el.innerHTML = '絞り込み: <strong>タグ ' + esc(tag) + '</strong> × <strong>店舗 ' + esc(store) + '</strong> <span>' + mode + '</span>';
+}
+
 function applyFilters() {
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
   const areaF = currentTagFilter;
@@ -710,6 +721,7 @@ function applyFilters() {
     return dir === 'asc' ? va - vb : vb - va;
   });
 
+  updateFilterSummary();
   renderTable(filtered);
   renderWorkComparison(filtered);
 }
