@@ -92,6 +92,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
 .area-tag.tag-johoku { background: #e8daef; color: #6c3483; }
 .area-tag.tag-outpatient { background: #d5f5e3; color: #1e8449; }
 .area-tag.tag-unassigned { background: #f2f3f4; color: #626567; }
+.area-tag.tag-store { background: #fff3cd; color: #856404; }
 .area-checkboxes { display: flex; flex-wrap: wrap; gap: 6px; }
 .area-check { display: inline-flex; align-items: center; gap: 3px; padding: 4px 10px; border: 1px solid #ddd; border-radius: 16px; font-size: 12px; cursor: pointer; user-select: none; transition: all 0.15s; }
 .area-check:has(input:checked) { background: #d6eaf8; border-color: #2471a3; color: #2471a3; font-weight: 600; }
@@ -228,12 +229,23 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
         <button type="button" class="tag-filter-btn" data-tag="未振り分け" onclick="setTagFilter('未振り分け', this)">未振り分け</button>
       </div>
     </div>
+    <div class="tag-filter-group">
+      <span class="tag-filter-label">店舗</span>
+      <div class="tag-filter-buttons" role="group" aria-label="store tags">
+        <button type="button" class="tag-filter-btn active" data-store="" onclick="setStoreFilter('', this)">すべて</button>
+        <button type="button" class="tag-filter-btn" data-store="柏" onclick="setStoreFilter('柏', this)">柏</button>
+        <button type="button" class="tag-filter-btn" data-store="足立" onclick="setStoreFilter('足立', this)">足立</button>
+        <button type="button" class="tag-filter-btn" data-store="越谷" onclick="setStoreFilter('越谷', this)">越谷</button>
+        <button type="button" class="tag-filter-btn" data-store="清瀬" onclick="setStoreFilter('清瀬', this)">清瀬</button>
+      </div>
+    </div>
     <select id="sortSelect" onchange="applyFilters()">
       <option value="updatedAt-desc">更新日 新しい順</option>
       <option value="updatedAt-asc">更新日 古い順</option>
       <option value="age-asc">年齢 若い順</option>
       <option value="age-desc">年齢 高い順</option>
       <option value="status">ステータス順</option>
+      <option value="store">店舗順</option>
     </select>
   </div>
 
@@ -251,6 +263,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
           <th class="col-agent-email">メール</th>
           <th class="col-status">ステータス</th>
           <th class="col-area">タグ</th>
+          <th class="col-area">店舗</th>
           <th style="min-width:55px;text-align:center;">外来PJ</th>
           <th class="col-handler">対応者</th>
           <th class="col-date">更新日</th>
@@ -273,6 +286,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
           <tr>
             <th>候補</th>
             <th>タグ</th>
+            <th>店舗</th>
             <th>ステータス</th>
             <th>開始</th>
             <th>曜日・日数</th>
@@ -326,6 +340,15 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
       <label class="area-check"><input type="checkbox" value="東葛" onchange="markDetailDirty()"> 東葛</label>
       <label class="area-check"><input type="checkbox" value="城北" onchange="markDetailDirty()"> 城北</label>
       <label class="area-check"><input type="checkbox" value="外来" onchange="markDetailDirty()"> 外来</label>
+    </div>
+  </div>
+  <div class="detail-field">
+    <label>店舗タグ（複数選択可）</label>
+    <div class="area-checkboxes" id="dStoreChecks">
+      <label class="area-check"><input type="checkbox" value="柏" onchange="markDetailDirty()"> 柏</label>
+      <label class="area-check"><input type="checkbox" value="足立" onchange="markDetailDirty()"> 足立</label>
+      <label class="area-check"><input type="checkbox" value="越谷" onchange="markDetailDirty()"> 越谷</label>
+      <label class="area-check"><input type="checkbox" value="清瀬" onchange="markDetailDirty()"> 清瀬</label>
     </div>
   </div>
   <div class="detail-field">
@@ -514,6 +537,7 @@ let userRole = 'viewer';
 let allCandidates = [];
 let currentFilter = 'screening';
 let currentTagFilter = '';
+let currentStoreFilter = '';
 let currentDetailId = null;
 let detailDirty = false;
 
@@ -585,6 +609,7 @@ const STATUS_GROUPS = {
 };
 const CLOSED_STATUSES = new Set(STATUS_GROUPS.closed);
 const TAGS = ['東葛', '城北', '外来'];
+const STORE_OPTIONS = ['柏', '足立', '越谷', '清瀬'];
 
 function getStatusGroup(s) {
   for (const [g, list] of Object.entries(STATUS_GROUPS)) {
@@ -618,7 +643,14 @@ function filterByStatus(filter, el) {
 
 function setTagFilter(tag, el) {
   currentTagFilter = tag || '';
-  document.querySelectorAll('.tag-filter-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('[data-tag]').forEach(btn => btn.classList.remove('active'));
+  if (el) el.classList.add('active');
+  applyFilters();
+}
+
+function setStoreFilter(store, el) {
+  currentStoreFilter = store || '';
+  document.querySelectorAll('[data-store]').forEach(btn => btn.classList.remove('active'));
   if (el) el.classList.add('active');
   applyFilters();
 }
@@ -626,6 +658,7 @@ function setTagFilter(tag, el) {
 function applyFilters() {
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
   const areaF = currentTagFilter;
+  const storeF = currentStoreFilter;
   const sort = document.getElementById('sortSelect').value;
 
   let filtered = allCandidates.filter(c => {
@@ -638,13 +671,15 @@ function applyFilters() {
     }
     // Tag filter
     const tagArr = getCandidateTags(c);
+    const storeArr = getCandidateStores(c);
     if (areaF && !tagArr.includes(areaF)) return false;
+    if (storeF && !storeArr.includes(storeF)) return false;
     // Text search
     if (search) {
       const work = getWorkInfo(c);
       const rawArea = getRawAreas(c).join(' ');
       const hay = [
-        c.jsId, c.name, c.location, c.agent, c.agentEmail, tagArr.join(' '), rawArea,
+        c.jsId, c.name, c.location, c.agent, c.agentEmail, tagArr.join(' '), storeArr.join(' '), rawArea,
         c.handler, c.status, c.notes, work.start, work.days, work.time, work.type, work.compensation, work.memo
       ].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
@@ -666,7 +701,12 @@ function applyFilters() {
       const order = ['面接確定', '面接済み', '面接調整中', '紹介受領', '書類選考中', '保留', '入社確定', '不採用', '辞退', '見送り'];
       va = order.indexOf(a.status); if (va < 0) va = 99;
       vb = order.indexOf(b.status); if (vb < 0) vb = 99;
+    } else if (key === 'store') {
+      const order = STORE_OPTIONS;
+      va = order.indexOf(getCandidateStores(a)[0]); if (va < 0) va = 99;
+      vb = order.indexOf(getCandidateStores(b)[0]); if (vb < 0) vb = 99;
     }
+    if (key === 'store') return va - vb;
     return dir === 'asc' ? va - vb : vb - va;
   });
 
@@ -704,10 +744,21 @@ function getCandidateTags(c) {
   return Array.from(tags);
 }
 
+function getCandidateStores(c) {
+  const raw = getRawAreas(c);
+  const fieldValues = [c.store, c.targetStore, c.preferredStore, c.preferredStores, c.stores]
+    .flatMap(v => Array.isArray(v) ? v : String(v || '').split(','))
+    .map(v => String(v).trim())
+    .filter(Boolean);
+  const joined = raw.concat(fieldValues).join(' ');
+  return STORE_OPTIONS.filter(store => joined.includes(store));
+}
+
 function tagClass(tag) {
   if (tag === '東葛') return 'tag-tokatsu';
   if (tag === '城北') return 'tag-johoku';
   if (tag === '外来') return 'tag-outpatient';
+  if (STORE_OPTIONS.includes(tag)) return 'tag-store';
   return 'tag-unassigned';
 }
 
@@ -739,12 +790,13 @@ function getWorkInfo(c) {
 function renderTable(list) {
   const tbody = document.getElementById('candidateBody');
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:24px;color:#999;">該当する候補者はいません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:24px;color:#999;">該当する候補者はいません</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(c => {
     const statusBadge = getStatusBadge(c.status);
     const areaTags = renderTagBadges(getCandidateTags(c));
+    const storeTags = renderTagBadges(getCandidateStores(c));
     const replyMark = (c.needsReply === true || c.needsReply === 'true') ? '<span class="badge badge-reply">要返信</span>' : (c.needsReply === 'waiting' ? '<span class="badge" style="background:#fff3cd;color:#856404;">待ち</span>' : '');
     const dateStr = c.updatedAt ? formatDate(c.updatedAt) : '-';
     return `<tr onclick="openDetail('${c.id}')" style="cursor:pointer;">
@@ -757,6 +809,7 @@ function renderTable(list) {
       <td class="col-agent-email" style="font-size:10px;">${esc(c.agentEmail || '-')}</td>
       <td class="col-status">${statusBadge} ${replyMark}</td>
       <td class="col-area">${areaTags || '-'}</td>
+      <td class="col-area">${storeTags || '-'}</td>
       <td style="text-align:center;">${c.outpatientPitched ? '<span class="tag-pitched">済</span>' : '<span class="tag-not-pitched">未</span>'}</td>
       <td class="col-handler">${esc(c.handler || '-')}</td>
       <td class="col-date">${dateStr}</td>
@@ -771,7 +824,7 @@ function renderWorkComparison(list) {
   if (count) count.textContent = String(list.length) + '件';
   if (!tbody) return;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:18px;color:#999;">該当する候補者はいません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:18px;color:#999;">該当する候補者はいません</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(c => {
@@ -781,6 +834,7 @@ function renderWorkComparison(list) {
     return '<tr onclick="openDetail(\'' + c.id + '\')" style="cursor:pointer;">' +
       '<td><div class="work-candidate">' + esc(name) + '</div><div class="work-sub">' + esc(sub || '-') + '</div></td>' +
       '<td>' + renderTagBadges(getCandidateTags(c)) + '</td>' +
+      '<td>' + (renderTagBadges(getCandidateStores(c)) || '-') + '</td>' +
       '<td>' + getStatusBadge(c.status) + '</td>' +
       '<td>' + esc(w.start) + '</td>' +
       '<td>' + esc(w.days) + '</td>' +
@@ -826,8 +880,12 @@ function openDetail(id) {
   document.getElementById('dStatus').value = c.status || '紹介受領';
   // 表示タグのチェックボックスをセット
   const cTags = getCandidateTags(c);
+  const cStores = getCandidateStores(c);
   document.querySelectorAll('#dAreaChecks input[type="checkbox"]').forEach(cb => {
     cb.checked = cTags.includes(cb.value);
+  });
+  document.querySelectorAll('#dStoreChecks input[type="checkbox"]').forEach(cb => {
+    cb.checked = cStores.includes(cb.value);
   });
   document.getElementById('dOutpatientPitched').checked = !!c.outpatientPitched;
   document.getElementById('dHandler').value = c.handler || '';
@@ -845,6 +903,7 @@ function openDetail(id) {
   const isReadOnly = userRole === 'viewer';
   document.getElementById('dStatus').disabled = isReadOnly;
   document.querySelectorAll('#dAreaChecks input[type="checkbox"]').forEach(cb => cb.disabled = isReadOnly);
+  document.querySelectorAll('#dStoreChecks input[type="checkbox"]').forEach(cb => cb.disabled = isReadOnly);
   document.getElementById('dOutpatientPitched').disabled = isReadOnly;
   document.getElementById('dHandler').readOnly = isReadOnly;
   document.getElementById('dNeedsReply').disabled = isReadOnly;
@@ -876,10 +935,12 @@ async function saveDetail() {
   if (!currentDetailId) return;
   // エリアチェックボックスから配列を取得
   const selectedAreas = [];
+  const selectedStores = [];
   document.querySelectorAll('#dAreaChecks input[type="checkbox"]:checked').forEach(cb => selectedAreas.push(cb.value));
+  document.querySelectorAll('#dStoreChecks input[type="checkbox"]:checked').forEach(cb => selectedStores.push(cb.value));
   const updates = {
     status: document.getElementById('dStatus').value,
-    area: selectedAreas,
+    area: selectedAreas.concat(selectedStores),
     outpatientPitched: document.getElementById('dOutpatientPitched').checked,
     handler: document.getElementById('dHandler').value,
     needsReply: document.getElementById('dNeedsReply').value === 'true' ? true : (document.getElementById('dNeedsReply').value === 'waiting' ? 'waiting' : false),
