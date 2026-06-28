@@ -331,6 +331,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
       <option value="面接確定">面接確定</option>
       <option value="面接済み">面接済み</option>
       <option value="入社確定">入社確定</option>
+      <option value="採用確定">採用確定</option>
       <option value="不採用">不採用</option>
       <option value="辞退">辞退</option>
       <option value="見送り">見送り</option>
@@ -457,7 +458,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
       <h4>サイドパネル（候補者詳細）</h4>
       <ul>
         <li><strong>上部:</strong> JS ID・名前・年齢/性別・居住地・担当者・経験・希望年収・入職時期（読み取り専用）</li>
-        <li><strong>ステータス:</strong> 紹介受領 → 書類選考中 → 面接調整中 → 面接確定 → 面接済み → 入社確定。またはいつでも不採用/辞退/見送り/保留に変更可</li>
+        <li><strong>ステータス:</strong> 紹介受領 → 書類選考中 → 面接調整中 → 面接確定 → 面接済み → 入社確定/採用確定。またはいつでも不採用/辞退/見送り/保留に変更可</li>
         <li><strong>タグ:</strong> 複数選択可（チェックボックス式）。東葛/城北/外来。未選択の場合は未振り分けとして表示</li>
         <li><strong>外来PJ打診:</strong> 越谷・清瀬新店の外来プロジェクトを案内済みかどうか（エリアタグとは独立したフラグ）</li>
         <li><strong>対応者:</strong> 社内で誰が対応中か記録</li>
@@ -475,6 +476,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
         <tr><td>面接確定</td><td>面接日時が確定</td></tr>
         <tr><td>面接済み</td><td>面接実施済み・結果判断中</td></tr>
         <tr><td>入社確定</td><td>内定承諾・入社日確定</td></tr>
+        <tr><td>採用確定</td><td>採用決定済み。入社日未確定または入社手続き前</td></tr>
         <tr><td>不採用</td><td>選考の結果お断り</td></tr>
         <tr><td>辞退</td><td>候補者側から辞退</td></tr>
         <tr><td>見送り</td><td>条件不一致等で見送り</td></tr>
@@ -610,7 +612,7 @@ const STATUS_GROUPS = {
   confirmed: ['面接確定', '面接済み'],
   adjusting: ['面接調整中'],
   screening: ['紹介受領', '書類選考中', '保留'],
-  closed: ['不採用', '辞退', '見送り', '選考終了', '入社確定']
+  closed: ['不採用', '辞退', '見送り', '選考終了', '入社確定', '採用確定']
 };
 const CLOSED_STATUSES = new Set(STATUS_GROUPS.closed);
 const TAGS = ['東葛', '城北', '外来'];
@@ -711,7 +713,7 @@ function applyFilters() {
       va = parseInt(a.age) || 999;
       vb = parseInt(b.age) || 999;
     } else if (key === 'status') {
-      const order = ['面接確定', '面接済み', '面接調整中', '紹介受領', '書類選考中', '保留', '入社確定', '選考終了', '不採用', '辞退', '見送り'];
+      const order = ['面接確定', '面接済み', '面接調整中', '紹介受領', '書類選考中', '保留', '採用確定', '入社確定', '選考終了', '不採用', '辞退', '見送り'];
       va = order.indexOf(a.status); if (va < 0) va = 99;
       vb = order.indexOf(b.status); if (vb < 0) vb = 99;
     } else if (key === 'store') {
@@ -865,7 +867,7 @@ function getStatusBadge(status) {
     '紹介受領': 'badge-received', '書類選考中': 'badge-received',
     '面接調整中': 'badge-adjusting',
     '面接確定': 'badge-confirmed', '面接済み': 'badge-confirmed',
-    '入社確定': 'badge-hired',
+    '入社確定': 'badge-hired', '採用確定': 'badge-hired',
     '不採用': 'badge-rejected', '辞退': 'badge-declined', '見送り': 'badge-passed', '選考終了': 'badge-passed',
     '保留': 'badge-received'
   };
