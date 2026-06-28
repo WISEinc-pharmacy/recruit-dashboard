@@ -41,6 +41,7 @@ body { font-family: 'Segoe UI', 'Yu Gothic UI', sans-serif; background: #f5f7fa;
 .sc-confirmed { background: #d5f5e3; color: #1e8449; }
 .sc-adjusting { background: #fdebd0; color: #ca6f1e; }
 .sc-screening { background: #d6eaf8; color: #2471a3; }
+.sc-hired { background: #abebc6; color: #196f3d; }
 .sc-closed { background: #f2f3f4; color: #909497; }
 .sc-reply { background: #fadbd8; color: #c0392b; }
 
@@ -211,6 +212,10 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
     <div class="summary-card sc-screening active" data-filter="screening" onclick="filterByStatus('screening', this)">
       <div class="count" id="countScreening">0</div>
       <div class="label">選考中</div>
+    </div>
+    <div class="summary-card sc-hired" data-filter="hired" onclick="filterByStatus('hired', this)">
+      <div class="count" id="countHired">0</div>
+      <div class="label">採用確定</div>
     </div>
     <div class="summary-card sc-reply" data-filter="reply" onclick="filterByStatus('reply', this)">
       <div class="count" id="countReply">0</div>
@@ -447,7 +452,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
       <h4>画面の見方</h4>
       <table>
         <tr><th>要素</th><th>説明</th></tr>
-        <tr><td>上部カード（全件/面接確定/調整中/選考中/返信要）</td><td>終了者を除いた候補者を区分別に表示。タップで絞り込み</td></tr>
+        <tr><td>上部カード（全件/面接確定/調整中/選考中/採用確定/返信要）</td><td>終了者を除いた候補者を区分別に表示。採用確定は単独で表示。タップで絞り込み</td></tr>
         <tr><td>検索バー</td><td>名前・JS ID・タグ・担当者・勤務条件などで検索</td></tr>
         <tr><td>タグフィルタ</td><td>東葛/城北/外来/未振り分けで絞り込み。全域は3タグすべてに表示</td></tr>
         <tr><td>ソート</td><td>更新日順（新/古）・年齢順・ステータス順</td></tr>
@@ -612,6 +617,7 @@ const STATUS_GROUPS = {
   confirmed: ['面接確定', '面接済み'],
   adjusting: ['面接調整中'],
   screening: ['紹介受領', '書類選考中', '保留'],
+  hired: ['採用確定'],
   closed: ['不採用', '辞退', '見送り', '選考終了', '入社確定', '採用確定']
 };
 const CLOSED_STATUSES = new Set(STATUS_GROUPS.closed);
@@ -627,7 +633,10 @@ function getStatusGroup(s) {
 
 function updateSummary() {
   const active = allCandidates.filter(c => !isClosedCandidate(c));
-  let counts = { all: active.length, confirmed: 0, adjusting: 0, screening: 0, reply: 0 };
+  let counts = { all: active.length, confirmed: 0, adjusting: 0, screening: 0, hired: 0, reply: 0 };
+  allCandidates.forEach(c => {
+    if (getStatusGroup(c.status) === 'hired') counts.hired++;
+  });
   active.forEach(c => {
     const g = getStatusGroup(c.status);
     if (counts[g] !== undefined) counts[g]++;
@@ -637,6 +646,7 @@ function updateSummary() {
   document.getElementById('countConfirmed').textContent = counts.confirmed;
   document.getElementById('countAdjusting').textContent = counts.adjusting;
   document.getElementById('countScreening').textContent = counts.screening;
+  document.getElementById('countHired').textContent = counts.hired;
   document.getElementById('countReply').textContent = counts.reply;
 }
 
@@ -677,7 +687,7 @@ function applyFilters() {
   const sort = document.getElementById('sortSelect').value;
 
   let filtered = allCandidates.filter(c => {
-    if (isClosedCandidate(c)) return false;
+    if (currentFilter !== 'hired' && isClosedCandidate(c)) return false;
     // Status group filter
     if (currentFilter === 'reply') {
       if (c.needsReply !== true && c.needsReply !== 'true' && c.needsReply !== 'waiting') return false;
