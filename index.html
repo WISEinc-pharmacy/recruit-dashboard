@@ -110,6 +110,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
 .comparison-section { padding: 12px 8px 80px; }
 .comparison-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 6px; }
 .comparison-header h2 { font-size: 18px; color: #1a5276; font-weight: 800; }
+.comparison-hint { margin-left: 10px; color: #d92d20; font-size: 13px; font-weight: 800; }
 .comparison-count { font-size: 13px; color: #667085; font-weight: 700; }
 .work-table-wrap { overflow-x: auto; background: #fff; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
 .work-table { min-width: 1220px; margin-top: 0; table-layout: auto; font-size: 14px; }
@@ -269,7 +270,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
 
   <section class="comparison-section">
     <div class="comparison-header">
-      <h2>勤務条件比較</h2>
+      <h2>勤務条件比較 <span class="comparison-hint">候補者をタップして詳細を確認</span></h2>
       <div class="comparison-count" id="workComparisonCount">0件</div>
     </div>
     <div class="work-table-wrap">
@@ -281,8 +282,8 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
             <th>店舗</th>
             <th>ステータス</th>
             <th>開始</th>
-            <th>曜日・日数</th>
-            <th>時間</th>
+            <th>希望曜日・日数</th>
+            <th>希望時間</th>
             <th>雇用/契約</th>
             <th>給与/単価</th>
             <th>判断メモ</th>
@@ -344,8 +345,8 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
   <div class="detail-field"><label>入社日</label><input type="text" id="dStartDate" placeholder="例: 2026-08-01 / 8月1日" oninput="markDetailDirty()"></div>
   <div class="work-detail-grid">
     <div class="detail-field"><label>開始時期</label><div class="value" id="dWorkStart"></div></div>
-    <div class="detail-field"><label>曜日日数</label><div class="value" id="dWorkDays"></div></div>
-    <div class="detail-field"><label>時間</label><div class="value" id="dWorkTime"></div></div>
+    <div class="detail-field"><label>希望曜日・日数</label><div class="value" id="dWorkDays"></div></div>
+    <div class="detail-field"><label>希望時間</label><div class="value" id="dWorkTime"></div></div>
     <div class="detail-field"><label>雇用/契約</label><div class="value" id="dWorkType"></div></div>
     <div class="detail-field"><label>給与/単価</label><div class="value" id="dWorkCompensation"></div></div>
     <div class="detail-field full"><label>条件メモ</label><div class="value" id="dWorkMemo"></div></div>
@@ -480,7 +481,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
         <tr><td>タグフィルタ</td><td>東葛/城北/外来/未振り分けで絞り込み。全域は3タグすべてに表示</td></tr>
         <tr><td>ソート</td><td>更新日順（新/古）・年齢順・ステータス順</td></tr>
         <tr><td>候補者行タップ</td><td>右からサイドパネルが開き、詳細表示・編集が可能</td></tr>
-        <tr><td>勤務条件比較</td><td>現在のフィルタ対象について、開始時期・曜日日数・時間・雇用/契約・単価を横並びで比較</td></tr>
+        <tr><td>勤務条件比較</td><td>現在のフィルタ対象について、開始時期・希望曜日・日数・希望時間・雇用/契約・単価を横並びで比較</td></tr>
       </table>
 
       <h4>サイドパネル（候補者詳細）</h4>
