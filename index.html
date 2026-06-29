@@ -342,6 +342,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
   <div class="detail-field"><label>担当者メール</label><div class="value" id="dAgentEmail"></div></div>
   <div class="detail-field"><label>経験</label><div class="value" id="dExperience"></div></div>
   <div class="detail-field"><label>希望年収</label><div class="value" id="dSalary"></div></div>
+  <div class="detail-field"><label>Slackスレッド</label><div class="value" id="dSlackThread"></div></div>
   <div class="detail-field"><label>入社日</label><input type="text" id="dStartDate" placeholder="例: 2026-08-01 / 8月1日" oninput="markDetailDirty()"></div>
   <div class="work-detail-grid">
     <div class="detail-field"><label>開始時期</label><div class="value" id="dWorkStart"></div></div>
@@ -951,6 +952,7 @@ function openDetail(id) {
   document.getElementById('dAgentEmail').textContent = c.agentEmail || '-';
   document.getElementById('dExperience').textContent = c.experience || '-';
   document.getElementById('dSalary').textContent = c.desiredSalary || '-';
+  document.getElementById('dSlackThread').innerHTML = renderSlackThreadLink(c);
   document.getElementById('dStartDate').value = getCandidateStartDate(c) === '-' ? '' : getCandidateStartDate(c);
   const workInfo = getWorkInfo(c);
   document.getElementById('dWorkStart').textContent = workInfo.start;
