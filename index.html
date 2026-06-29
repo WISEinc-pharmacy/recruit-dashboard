@@ -78,7 +78,9 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
 .col-area { min-width: 130px; }
 .col-handler { min-width: 96px; }
 .col-date { min-width: 88px; font-size: 13px; color: #667085; }
-.col-actions { min-width: 40px; text-align: center; }
+.col-actions { min-width: 72px; text-align: center; }
+.slack-thread-link { display: inline-flex; align-items: center; justify-content: center; min-height: 30px; padding: 0 8px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; color: #344054; font-size: 12px; font-weight: 800; text-decoration: none; }
+.slack-thread-link:hover { background: #edf4f8; color: #1a5276; }
 
 /* ===== Status Badges ===== */
 .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: 800; white-space: nowrap; }
@@ -813,6 +815,21 @@ function getWorkInfo(c) {
   };
 }
 
+function getSlackThreadUrl(c) {
+  if (c.slackUrl || c.slackThreadUrl) return c.slackUrl || c.slackThreadUrl;
+  const ts = String(c.slackTs || '').trim();
+  if (!ts) return '';
+  const channel = String(c.slackChannelId || c.channelId || 'C0514E9M3QR').trim();
+  const p = ts.replace('.', '');
+  return `https://tsunagu-pharmacy.slack.com/archives/${channel}/p${p}`;
+}
+
+function renderSlackThreadLink(c) {
+  const url = getSlackThreadUrl(c);
+  if (!url) return '<span style="font-size:16px;">›</span>';
+  return `<a class="slack-thread-link" href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation();">Slack</a>`;
+}
+
 function renderTable(list) {
   const tbody = document.getElementById('candidateBody');
   if (list.length === 0) {
@@ -839,7 +856,7 @@ function renderTable(list) {
       <td style="text-align:center;">${c.outpatientPitched ? '<span class="tag-pitched">済</span>' : '<span class="tag-not-pitched">未</span>'}</td>
       <td class="col-handler">${esc(c.handler || '-')}</td>
       <td class="col-date">${dateStr}</td>
-      <td class="col-actions"><span style="font-size:16px;">›</span></td>
+      <td class="col-actions">${renderSlackThreadLink(c)}</td>
     </tr>`;
   }).join('');
 }
