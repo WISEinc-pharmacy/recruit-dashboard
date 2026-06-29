@@ -284,7 +284,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
       <table class="work-table">
         <thead>
           <tr>
-            <th>候補</th>
+            <th>候補（ID / 年齢性別 / 居住地 / 紹介元または自己応募）</th>
             <th>タグ</th>
             <th>店舗</th>
             <th>ステータス</th>
@@ -931,9 +931,9 @@ function renderWorkComparison(list) {
     const ageSex = [c.age, c.gender].filter(v => v && String(v).trim()).join(' ') || '-';
     const source = pickFirst(c.source, c.referralSource, c.applicationSource, c.agent, c.agentName, JSSelfApply);
     const updated = c.updatedAt ? formatDate(c.updatedAt) : '-';
-    const sub = '年齢性別 ' + ageSex + ' / 居住地 ' + (c.location || '-') + ' / 紹介元または自己応募 ' + source;
+    const sub = ageSex + ' / ' + (c.location || '-') + ' / ' + source;
     return '<tr onclick="openDetail(\'' + c.id + '\')" style="cursor:pointer;">' +
-      '<td><div class="work-candidate">ID ' + esc(displayId) + '</div><div class="work-sub">' + esc(sub) + '</div></td>' +
+      '<td><div class="work-candidate">' + esc(displayId) + '</div><div class="work-sub">' + esc(sub) + '</div></td>' +
       '<td>' + renderTagBadges(getCandidateTags(c)) + '</td>' +
       '<td>' + (renderTagBadges(getCandidateStores(c)) || '-') + '</td>' +
       '<td>' + getStatusBadge(c.status) + '</td>' +
