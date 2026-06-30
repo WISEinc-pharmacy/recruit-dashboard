@@ -1048,6 +1048,9 @@ function markDetailDirty() {
 
 async function saveDetail() {
   if (!currentDetailId) return;
+  const saveBtn = document.getElementById('btnSaveDetail');
+  if (saveBtn.disabled) return;
+  saveBtn.disabled = true;
   // エリアチェックボックスから配列を取得
   const selectedAreas = [];
   const selectedStores = [];
@@ -1064,14 +1067,18 @@ async function saveDetail() {
     interviewNotes: document.getElementById('dInterviewNotes').value,
     meetRecordingUrl: document.getElementById('dMeetRecordingUrl').value,
     geminiSummaryUrl: document.getElementById('dGeminiSummary').value,
+    manualUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    manualUpdatedBy: currentUser ? currentUser.email : '',
+    manualUpdatedRole: userRole,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   try {
     await db.collection('candidates').doc(currentDetailId).update(updates);
     detailDirty = false;
-    document.getElementById('btnSaveDetail').disabled = true;
+    saveBtn.disabled = true;
     showToast('保存しました');
   } catch (e) {
+    saveBtn.disabled = false;
     alert('保存に失敗しました: ' + e.message);
   }
 }
