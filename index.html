@@ -267,11 +267,11 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
       <table class="work-table">
         <thead>
           <tr>
-            <th>候補（ID / 年齢性別 / 居住地 / 紹介元または自己応募）</th>
+            <th>候補（ID / 氏名 / 年齢性別 / 居住地 / 紹介元または自己応募）</th>
             <th>タグ</th>
             <th>店舗</th>
             <th>ステータス</th>
-            <th>開始</th>
+            <th>勤務開始</th>
             <th>希望曜日・日数</th>
             <th>希望時間</th>
             <th>雇用/契約</th>
@@ -808,6 +808,32 @@ function getCandidateStartDate(c) {
 
 const JSMediklectPrefix = 'メディクレクト#';
 const JSSelfApply = '自己応募';
+const AGENT_COMPANY_BY_DOMAIN = {
+  'anycareer.co.jp': 'ファーマキャリア',
+  'm3career.com': '薬キャリ',
+  'krasys.jp': 'クラシス',
+  'job-medley.com': 'ジョブメドレー',
+  'medley.jp': 'ジョブメドレーエージェント',
+  'midup.co.jp': 'Mid Up',
+  'nicho.co.jp': 'メディカルリソース',
+  'ap-c.co.jp': 'アポプラス',
+  'pharmate.jp': 'ファル・メイト',
+  'univ.co.jp': 'ユニヴ',
+  'iqvia.com': 'IQVIA',
+};
+function getCandidateName(c) {
+  const name = String(c.name || '').trim();
+  return (name && name !== '不明' && name !== '-') ? name : '';
+}
+function getSourceDisplay(c) {
+  const domain = ((String(c.agentEmail || '').match(/@([\w.-]+)/) || [])[1] || '').toLowerCase();
+  const company = AGENT_COMPANY_BY_DOMAIN[domain] || '';
+  const person = pickFirst(c.agent, c.agentName);
+  if (company && person !== '-' && !person.includes(company)) return company + ' ' + person;
+  if (company) return company;
+  if (person !== '-') return person;
+  return pickFirst(c.source, c.referralSource, c.applicationSource, JSSelfApply);
+}
 function getCandidateDisplayId(c) {
   if (c.mediklectUserNo) return JSMediklectPrefix + String(c.mediklectUserNo).trim();
   return pickFirst(c.jsId, c.candidateId, c.sourceCandidateId, c.externalCandidateId, c.agentCandidateId, c.userNo, c.id);
@@ -847,12 +873,13 @@ function renderWorkComparison(list) {
     const w = getWorkInfo(c);
     const displayId = getCandidateDisplayId(c);
     const ageSex = [c.age, c.gender].filter(v => v && String(v).trim()).join(' ') || '-';
-    const source = pickFirst(c.source, c.referralSource, c.applicationSource, c.agent, c.agentName, JSSelfApply);
+    const source = getSourceDisplay(c);
     const updated = c.updatedAt ? formatDate(c.updatedAt) : '-';
     const sub = ageSex + ' / ' + (c.location || '-') + ' / ' + source;
+    const candidateName = getCandidateName(c);
     const replyMark = (c.needsReply === true || c.needsReply === 'true') ? ' <span class="badge badge-reply">要返信</span>' : (c.needsReply === 'waiting' ? ' <span class="badge" style="background:#fff3cd;color:#856404;">待ち</span>' : '');
     return '<tr onclick="openDetail(\'' + c.id + '\')" style="cursor:pointer;">' +
-      '<td><div class="work-candidate">' + esc(displayId) + '</div><div class="work-sub">' + esc(sub) + '</div></td>' +
+      '<td><div class="work-candidate">' + esc(displayId) + (candidateName ? '　' + esc(candidateName) : '') + '</div><div class="work-sub">' + esc(sub) + '</div></td>' +
       '<td>' + renderTagBadges(getCandidateTags(c)) + '</td>' +
       '<td>' + (renderTagBadges(getCandidateStores(c)) || '-') + '</td>' +
       '<td>' + getStatusBadge(c.status) + replyMark + '</td>' +
@@ -889,9 +916,10 @@ function openDetail(id) {
   document.getElementById('btnSaveDetail').disabled = true;
 
   const titleId = getCandidateDisplayId(c);
+  const titleName = getCandidateName(c);
   const ageSex = [c.age, c.gender].filter(v => v && String(v).trim()).join(' ') || '-';
-  const source = pickFirst(c.source, c.referralSource, c.applicationSource, c.agent, c.agentName, JSSelfApply);
-  document.getElementById('detailTitle').innerHTML = `<span class="detail-title-main"><span class="detail-title-label">ID</span> ${esc(titleId)}</span><span class="detail-title-sub"><span class="detail-title-label">年齢性別</span> ${esc(ageSex)} / <span class="detail-title-label">居住地</span> ${esc(c.location || '-')} / <span class="detail-title-label">紹介元または自己応募</span> ${esc(source)}</span>`;
+  const source = getSourceDisplay(c);
+  document.getElementById('detailTitle').innerHTML = `<span class="detail-title-main"><span class="detail-title-label">ID</span> ${esc(titleId)}${titleName ? '　' + esc(titleName) : ''}</span><span class="detail-title-sub"><span class="detail-title-label">年齢性別</span> ${esc(ageSex)} / <span class="detail-title-label">居住地</span> ${esc(c.location || '-')} / <span class="detail-title-label">紹介元または自己応募</span> ${esc(source)}</span>`;
   document.getElementById('dJsId').textContent = titleId;
   document.getElementById('dName').textContent = c.name || '-';
   document.getElementById('dAgeSex').textContent = `${c.age || '-'} / ${c.gender || '-'}`;
