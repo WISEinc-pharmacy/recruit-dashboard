@@ -443,6 +443,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
         <tr><td>ソート</td><td>更新日順（新/古）・年齢順・ステータス順</td></tr>
         <tr><td>候補者行タップ</td><td>右からサイドパネルが開き、詳細表示・編集が可能</td></tr>
         <tr><td>勤務条件比較</td><td>現在のフィルタ対象について、開始時期・希望曜日・日数・希望時間・雇用/契約・単価を横並びで比較</td></tr>
+        <tr><td>🌐サイト対応バッジ</td><td>ジョブメドレー案件はサイト内でやり取りするため、メールベースの返信要否は判定していません。対応状況はジョブメドレー管理画面で確認し、必要ならこのダッシュボードを手動更新してください</td></tr>
       </table>
 
       <h4>サイドパネル（候補者詳細）</h4>
@@ -834,6 +835,13 @@ function getSourceDisplay(c) {
   if (person !== '-') return person;
   return pickFirst(c.source, c.referralSource, c.applicationSource, JSSelfApply);
 }
+// ジョブメドレーはメールでやり取りできず対応はサイト管理画面（2026-07-02 サイト対応マーク方式）
+function isSiteManaged(c) {
+  return /job-medley\.com/i.test(String(c.agentEmail || ''));
+}
+function siteManagedBadge() {
+  return ' <span class="badge" style="background:#e0f2fe;color:#0369a1;" title="サイト内でのやり取りのため、返信の有無は判定していません。ジョブメドレー管理画面でご確認ください">🌐サイト対応</span>';
+}
 function getCandidateDisplayId(c) {
   if (c.mediklectUserNo) return JSMediklectPrefix + String(c.mediklectUserNo).trim();
   return pickFirst(c.jsId, c.candidateId, c.sourceCandidateId, c.externalCandidateId, c.agentCandidateId, c.userNo, c.id);
@@ -882,7 +890,7 @@ function renderWorkComparison(list) {
       '<td><div class="work-candidate">' + esc(displayId) + (candidateName ? '　' + esc(candidateName) : '') + '</div><div class="work-sub">' + esc(sub) + '</div></td>' +
       '<td>' + renderTagBadges(getCandidateTags(c)) + '</td>' +
       '<td>' + (renderTagBadges(getCandidateStores(c)) || '-') + '</td>' +
-      '<td>' + getStatusBadge(c.status) + replyMark + '</td>' +
+      '<td>' + getStatusBadge(c.status) + replyMark + (isSiteManaged(c) ? siteManagedBadge() : '') + '</td>' +
       '<td>' + esc(w.start) + '</td>' +
       '<td>' + esc(w.days) + '</td>' +
       '<td>' + esc(w.time) + '</td>' +
@@ -919,7 +927,7 @@ function openDetail(id) {
   const titleName = getCandidateName(c);
   const ageSex = [c.age, c.gender].filter(v => v && String(v).trim()).join(' ') || '-';
   const source = getSourceDisplay(c);
-  document.getElementById('detailTitle').innerHTML = `<span class="detail-title-main"><span class="detail-title-label">ID</span> ${esc(titleId)}${titleName ? '　' + esc(titleName) : ''}</span><span class="detail-title-sub"><span class="detail-title-label">年齢性別</span> ${esc(ageSex)} / <span class="detail-title-label">居住地</span> ${esc(c.location || '-')} / <span class="detail-title-label">紹介元または自己応募</span> ${esc(source)}</span>`;
+  document.getElementById('detailTitle').innerHTML = `<span class="detail-title-main"><span class="detail-title-label">ID</span> ${esc(titleId)}${titleName ? '　' + esc(titleName) : ''}</span><span class="detail-title-sub"><span class="detail-title-label">年齢性別</span> ${esc(ageSex)} / <span class="detail-title-label">居住地</span> ${esc(c.location || '-')} / <span class="detail-title-label">紹介元または自己応募</span> ${esc(source)}${isSiteManaged(c) ? siteManagedBadge() : ''}</span>`;
   document.getElementById('dJsId').textContent = titleId;
   document.getElementById('dName').textContent = c.name || '-';
   document.getElementById('dAgeSex').textContent = `${c.age || '-'} / ${c.gender || '-'}`;
