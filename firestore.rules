@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+    function isRegistered() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.token.email));
+    }
+    function hasRole(roles) {
+      return isRegistered()
+        && get(/databases/$(database)/documents/users/$(request.auth.token.email)).data.role in roles;
+    }
+    match /users/{email} {
+      allow read: if isRegistered();
+      allow write: if hasRole(['admin']);
+    }
+    match /candidates/{id} {
+      allow read: if isRegistered();
+      allow write: if hasRole(['admin', 'editor']);
+    }
+    match /access_requests/{id} {
+      // 未登録でも認証済みなら自分のメールアドレスでのみ申請可
+      allow create: if isSignedIn()
+        && request.resource.data.email == request.auth.token.email;
+      allow read: if hasRole(['admin']);
+      allow update, delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
