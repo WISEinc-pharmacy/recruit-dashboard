@@ -109,6 +109,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
 .work-table th { cursor: default; }
 .work-table td { line-height: 1.5; padding: 11px 10px; }
 .work-candidate { font-weight: 700; }
+.id-tag { display: inline-block; background: #f1f5f9; border: 1px solid #dbe3ec; color: #475569; border-radius: 5px; padding: 1px 7px; font-size: 0.85em; font-weight: 600; vertical-align: middle; }
 .work-sub { font-size: 12px; color: #667085; margin-top: 3px; }
 .work-note { max-width: 280px; color: #475467; }
 .work-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -176,7 +177,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
 <div id="loginScreen">
   <div class="login-card">
     <h2>候補者ダッシュボード</h2>
-    <p>外来プロジェクト 採用管理</p>
+    <p>ワイズ 採用管理</p>
     <button class="btn btn-google" onclick="doLogin()">Googleアカウントでログイン</button>
   </div>
 </div>
@@ -425,7 +426,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
     <div class="help-content">
 
       <h4>概要</h4>
-      <p>外来プロジェクト（越谷・清瀬新店）の採用候補者を一元管理するダッシュボードです。結〈yui〉がrecruit@メールを5分ごとにポーリングし、新規候補者を自動登録します。Slackボタン操作もリアルタイム連動します。</p>
+      <p>ワイズの採用候補者を一元管理するダッシュボードです。結〈yui〉がrecruit@メールを5分ごとにポーリングし、新規候補者を自動登録します。Slackボタン操作もリアルタイム連動します。</p>
 
       <h4>データの流れ</h4>
       <ul>
@@ -475,14 +476,18 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
       </table>
 
       <h4>権限管理（管理者のみ）</h4>
+      <table>
+        <tr><th>権限</th><th>できること</th></tr>
+        <tr><td>管理者</td><td>全操作可能＋ユーザー追加/削除/権限変更</td></tr>
+        <tr><td>編集者</td><td>候補者のステータス・エリア・メモ等を編集可能</td></tr>
+        <tr><td>閲覧者</td><td>閲覧のみ（編集ボタン非表示）</td></tr>
+      </table>
       <ul>
-        <li><strong>管理者:</strong> 全操作可能＋ユーザー追加/削除/権限変更</li>
-        <li><strong>編集者:</strong> 候補者のステータス・エリア・メモ等を編集可能</li>
-        <li><strong>閲覧者:</strong> 閲覧のみ（編集ボタン非表示）</li>
         <li>初回ログインユーザーが自動的に管理者になります</li>
         <li>未登録ユーザーはログインできません（管理者が事前に追加する必要あり）</li>
       </ul>
 
+      <div id="helpTechSpec" style="display:none;">
       <h4>技術仕様</h4>
       <ul>
         <li><strong>Firebase PJ:</strong> wise-recruit-db5f3（個人情報分離のため独立プロジェクト）</li>
@@ -492,6 +497,7 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
         <li><strong>リアルタイム更新:</strong> Firestore onSnapshot（ページを開いている間は自動反映）</li>
         <li><strong>yui連携:</strong> recruit_bot.mjsがfirebase-admin SDKでFirestoreに書き込み</li>
       </ul>
+      </div>
 
       <h4>注意事項</h4>
       <ul>
@@ -887,7 +893,7 @@ function renderWorkComparison(list) {
     const candidateName = getCandidateName(c);
     const replyMark = (c.needsReply === true || c.needsReply === 'true') ? ' <span class="badge badge-reply">要返信</span>' : (c.needsReply === 'waiting' ? ' <span class="badge" style="background:#fff3cd;color:#856404;">待ち</span>' : '');
     return '<tr onclick="openDetail(\'' + c.id + '\')" style="cursor:pointer;">' +
-      '<td><div class="work-candidate">' + esc(displayId) + (candidateName ? '　' + esc(candidateName) : '') + '</div><div class="work-sub">' + esc(sub) + '</div></td>' +
+      '<td><div class="work-candidate"><span class="id-tag">' + esc(displayId) + '</span>' + (candidateName ? '　' + esc(candidateName) : '') + '</div><div class="work-sub">' + esc(sub) + '</div></td>' +
       '<td>' + renderTagBadges(getCandidateTags(c)) + '</td>' +
       '<td>' + (renderTagBadges(getCandidateStores(c)) || '-') + '</td>' +
       '<td>' + getStatusBadge(c.status) + replyMark + (isSiteManaged(c) ? siteManagedBadge() : '') + '</td>' +
@@ -927,7 +933,7 @@ function openDetail(id) {
   const titleName = getCandidateName(c);
   const ageSex = [c.age, c.gender].filter(v => v && String(v).trim()).join(' ') || '-';
   const source = getSourceDisplay(c);
-  document.getElementById('detailTitle').innerHTML = `<span class="detail-title-main"><span class="detail-title-label">ID</span> ${esc(titleId)}${titleName ? '　' + esc(titleName) : ''}</span><span class="detail-title-sub"><span class="detail-title-label">年齢性別</span> ${esc(ageSex)} / <span class="detail-title-label">居住地</span> ${esc(c.location || '-')} / <span class="detail-title-label">紹介元または自己応募</span> ${esc(source)}${isSiteManaged(c) ? siteManagedBadge() : ''}</span>`;
+  document.getElementById('detailTitle').innerHTML = `<span class="detail-title-main"><span class="detail-title-label">ID</span> <span class="id-tag">${esc(titleId)}</span>${titleName ? '　' + esc(titleName) : ''}</span><span class="detail-title-sub"><span class="detail-title-label">年齢性別</span> ${esc(ageSex)} / <span class="detail-title-label">居住地</span> ${esc(c.location || '-')} / <span class="detail-title-label">紹介元または自己応募</span> ${esc(source)}${isSiteManaged(c) ? siteManagedBadge() : ''}</span>`;
   document.getElementById('dJsId').textContent = titleId;
   document.getElementById('dName').textContent = c.name || '-';
   document.getElementById('dAgeSex').textContent = `${c.age || '-'} / ${c.gender || '-'}`;
@@ -1041,7 +1047,11 @@ async function saveDetail() {
 // ===== 権限管理 =====
 function openAdminModal() { document.getElementById('adminModal').classList.add('show'); renderUserList(); }
 function closeAdminModal() { document.getElementById('adminModal').classList.remove('show'); }
-function openHelpModal() { document.getElementById('helpModal').classList.add('show'); }
+function openHelpModal() {
+  const tech = document.getElementById('helpTechSpec');
+  if (tech) tech.style.display = (userRole === 'admin') ? '' : 'none';
+  document.getElementById('helpModal').classList.add('show');
+}
 function closeHelpModal() { document.getElementById('helpModal').classList.remove('show'); }
 
 async function addUser() {
