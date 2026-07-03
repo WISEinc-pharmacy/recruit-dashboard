@@ -24,7 +24,7 @@ body { font-family: 'Segoe UI', 'Yu Gothic UI', sans-serif; background: #f5f7fa;
 .btn-small { padding: 8px 12px; min-height: 38px; font-size: 13px; }
 
 /* ===== Login Screen ===== */
-#loginScreen { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #1a5276 0%, #2c3e50 100%); }
+#loginScreen, #requestScreen { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #1a5276 0%, #2c3e50 100%); }
 .login-card { background: #fff; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.15); max-width: 360px; width: 90%; }
 .login-card h2 { margin-bottom: 8px; color: #1a5276; }
 .login-card p { color: #666; margin-bottom: 24px; font-size: 13px; }
@@ -179,6 +179,24 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
     <h2>候補者ダッシュボード</h2>
     <p>ワイズ 採用管理</p>
     <button class="btn btn-google" onclick="doLogin()">Googleアカウントでログイン</button>
+  </div>
+</div>
+
+<!-- ===== Access Request Screen（未登録ユーザー向け） ===== -->
+<div id="requestScreen" style="display:none;">
+  <div class="login-card">
+    <h2>アクセス権がありません</h2>
+    <p id="reqEmail" style="margin-bottom:4px;font-weight:600;"></p>
+    <div id="reqFormArea">
+      <p>利用には管理者の承認が必要です。<br>下のボタンから利用申請できます。</p>
+      <button class="btn btn-google" id="btnRequestAccess" onclick="requestAccess()">利用を申請する</button>
+    </div>
+    <div id="reqDoneArea" style="display:none;">
+      <p>申請を受け付けました。<br>承認されるとメールでお知らせします。</p>
+    </div>
+    <div style="margin-top:20px;">
+      <button class="btn btn-small" onclick="doLogout()">別のアカウントでログインする</button>
+    </div>
   </div>
 </div>
 
@@ -483,8 +501,8 @@ tbody td { padding: 11px 10px; vertical-align: top; line-height: 1.5; }
         <tr><td>閲覧者</td><td>閲覧のみ（編集ボタン非表示）</td></tr>
       </table>
       <ul>
-        <li>初回ログインユーザーが自動的に管理者になります</li>
-        <li>未登録ユーザーはログインできません（管理者が事前に追加する必要あり）</li>
+        <li>未登録の方は、ログイン後に表示される<span class="key">利用を申請する</span>ボタンから申請できます</li>
+        <li>申請すると管理者（山内）に通知が届き、承認されると申請者へメールで連絡が届きます</li>
       </ul>
 
       <div id="helpTechSpec" style="display:none;">
@@ -554,38 +572,63 @@ function doLogout() { auth.signOut(); }
 auth.onAuthStateChanged(async user => {
   if (user) {
     currentUser = user;
-    document.getElementById('mainApp').style.display = 'block';
+    const ok = await checkUserRole(user);
+    if (!ok) return; // 未登録 → 申請画面を表示中
+    document.getElementById('requestScreen').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
     document.getElementById('userInfo').textContent = user.displayName || user.email;
-    await checkUserRole(user);
     applyRoleUI();
     loadCandidates();
   } else {
     currentUser = null;
     document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('requestScreen').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
   }
 });
 
 async function checkUserRole(user) {
-  const doc = await db.collection('users').doc(user.email).get();
-  if (doc.exists) {
-    userRole = doc.data().role || 'viewer';
-  } else {
-    const snap = await db.collection('users').get();
-    if (snap.empty) {
-      userRole = 'admin';
-      await db.collection('users').doc(user.email).set({
-        email: user.email,
-        name: user.displayName || '',
-        role: 'admin',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } else {
-      await auth.signOut();
-      alert('アクセス権がありません。\n管理者にご連絡ください。');
-      return;
+  try {
+    const doc = await db.collection('users').doc(user.email).get();
+    if (doc.exists) {
+      userRole = doc.data().role || 'viewer';
+      return true;
     }
+  } catch (e) {
+    // permission-denied = 未登録（セキュリティルールでusers読み取り不可）
+    console.warn('role check:', e.message);
+  }
+  showAccessRequest(user);
+  return false;
+}
+
+function showAccessRequest(user) {
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('requestScreen').style.display = 'flex';
+  document.getElementById('reqEmail').textContent = user.email;
+  const requested = localStorage.getItem('accessRequested_' + user.email);
+  document.getElementById('reqFormArea').style.display = requested ? 'none' : 'block';
+  document.getElementById('reqDoneArea').style.display = requested ? 'block' : 'none';
+}
+
+async function requestAccess() {
+  const btn = document.getElementById('btnRequestAccess');
+  btn.disabled = true;
+  try {
+    await db.collection('access_requests').add({
+      email: currentUser.email,
+      name: currentUser.displayName || '',
+      status: 'pending',
+      requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    localStorage.setItem('accessRequested_' + currentUser.email, '1');
+    document.getElementById('reqFormArea').style.display = 'none';
+    document.getElementById('reqDoneArea').style.display = 'block';
+  } catch (e) {
+    alert('申請に失敗しました: ' + e.message);
+    btn.disabled = false;
   }
 }
 
